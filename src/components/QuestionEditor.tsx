@@ -10,7 +10,12 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
-import { TEXT_FORMAT_SPEC_EXAMPLE, parseQuestionsInput } from '../shared/presets';
+import {
+  PRESET_PACKS,
+  TEXT_FORMAT_SPEC_EXAMPLE,
+  parseQuestionsInput,
+  type PresetPack,
+} from '../shared/presets';
 import type { Question, QuestionInput } from '../shared/types';
 
 interface QuestionEditorProps {
@@ -45,6 +50,7 @@ export function QuestionEditor({
   const [importText, setImportText] = useState('');
   const [importErrors, setImportErrors] = useState<string[]>([]);
   const [importMode, setImportMode] = useState<'append' | 'replace'>('append');
+  const [pendingPresetId, setPendingPresetId] = useState<string | null>(null);
 
   useEffect(() => {
     setRoundTitle(title);
@@ -179,6 +185,27 @@ export function QuestionEditor({
     setShowImportModal(false);
   };
 
+  const handleApplyPreset = (pack: PresetPack, mode: 'replace' | 'append') => {
+    const current = toInputs(questions);
+    const next = mode === 'replace' ? pack.questions : [...current, ...pack.questions];
+    if (next.length > MAX_QUESTIONS) {
+      setStartError(
+        `Adding ${pack.questions.length} would pass the ${MAX_QUESTIONS}-question max. Replace or trim first.`,
+      );
+      return;
+    }
+    onChange(next);
+    if (
+      mode === 'replace' &&
+      (!roundTitle.trim() || roundTitle.trim().toLowerCase() === 'untitled house round')
+    ) {
+      setRoundTitle(pack.title);
+      onTitleChange(pack.title);
+    }
+    setPendingPresetId(null);
+    setStartError(null);
+  };
+
   const handleTryOpenLobby = () => {
     if (questions.length < MIN_QUESTIONS) {
       setStartError(
@@ -269,6 +296,80 @@ export function QuestionEditor({
           )}
         </div>
       </div>
+
+      {/* Preset Rounds */}
+      <section className="space-y-3 min-w-0">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="font-display font-bold text-base text-text">Preset rounds</h2>
+          <p className="text-xs text-muted">
+            One tap loads 10 ready-to-play questions. Tweak or add more anytime.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 min-w-0">
+          {PRESET_PACKS.map((pack) => {
+            const isPending = pendingPresetId === pack.id;
+            const canAppend = questions.length + pack.questions.length <= MAX_QUESTIONS;
+            return (
+              <div
+                key={pack.id}
+                className="bg-surface rounded-2xl border border-border p-4 flex flex-col justify-between gap-3 min-w-0"
+              >
+                <div className="space-y-1 min-w-0">
+                  <p className="font-display font-bold text-base text-text truncate">
+                    {pack.title}
+                  </p>
+                  <p className="text-xs text-muted break-words">{pack.subtitle}</p>
+                </div>
+
+                {isPending ? (
+                  <div className="flex flex-wrap items-center gap-2">
+                    {canAppend && (
+                      <button
+                        type="button"
+                        onClick={() => handleApplyPreset(pack, 'append')}
+                        className="btn-secondary px-3 py-1.5 text-xs cursor-pointer whitespace-nowrap"
+                      >
+                        Add +10
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleApplyPreset(pack, 'replace')}
+                      className="btn-primary px-3 py-1.5 text-xs cursor-pointer whitespace-nowrap"
+                    >
+                      Replace queue
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPendingPresetId(null)}
+                      className="btn-ghost px-2.5 py-1.5 text-xs cursor-pointer whitespace-nowrap"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (questions.length === 0) {
+                          handleApplyPreset(pack, 'replace');
+                        } else {
+                          setPendingPresetId(pack.id);
+                        }
+                      }}
+                      className="btn-secondary px-3.5 py-1.5 text-xs cursor-pointer whitespace-nowrap"
+                    >
+                      {questions.length === 0 ? 'Use this round' : 'Load preset'}
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Left: Add / Edit Question Form */}

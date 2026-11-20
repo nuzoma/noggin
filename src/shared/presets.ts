@@ -1,5 +1,221 @@
 import type { QuestionInput } from './types';
 
+export interface PresetPack {
+  id: string;
+  title: string;
+  subtitle: string;
+  questions: QuestionInput[];
+}
+
+export const PRESET_PACKS: PresetPack[] = [
+  {
+    id: 'living-room-mix',
+    title: 'Living Room Mix',
+    subtitle: '10 questions · Everyday facts & warm-up',
+    questions: [
+      {
+        prompt: 'Which planet in our solar system rotates on its side at nearly 98 degrees?',
+        options: ['Mars', 'Uranus', 'Neptune', 'Venus'],
+        correctIndex: 1,
+        timeLimitSec: 20,
+      },
+      {
+        prompt: 'What is the only mammal capable of true sustained flight?',
+        options: ['Flying squirrel', 'Sugar glider', 'Bat', 'Colugo'],
+        correctIndex: 2,
+        timeLimitSec: 15,
+      },
+      {
+        prompt: 'How many hearts does an octopus have?',
+        options: ['1', '2', '3', '4'],
+        correctIndex: 2,
+        timeLimitSec: 15,
+      },
+      {
+        prompt: 'Which element has the chemical symbol Au?',
+        options: ['Silver', 'Argon', 'Gold', 'Aluminum'],
+        correctIndex: 2,
+        timeLimitSec: 15,
+      },
+      {
+        prompt: 'In standard UNO, how many cards are dealt to each player at the start?',
+        options: ['5', '7', '9', '10'],
+        correctIndex: 1,
+        timeLimitSec: 20,
+      },
+      {
+        prompt: 'Which country has the most natural lakes in the world?',
+        options: ['Finland', 'Canada', 'Russia', 'Sweden'],
+        correctIndex: 1,
+        timeLimitSec: 20,
+      },
+      {
+        prompt: 'What does HTTP stand for?',
+        options: [
+          'HyperText Transfer Protocol',
+          'High Transmission Text Path',
+          'Hyperlink Transport Terminal Process',
+          'Host Transfer Text Protocol',
+        ],
+        correctIndex: 0,
+        timeLimitSec: 20,
+      },
+      {
+        prompt: 'Which bone is the longest in the human body?',
+        options: ['Tibia', 'Humerus', 'Femur', 'Radius'],
+        correctIndex: 2,
+        timeLimitSec: 15,
+      },
+      {
+        prompt: 'What is the capital city of Australia?',
+        options: ['Sydney', 'Melbourne', 'Canberra', 'Brisbane'],
+        correctIndex: 2,
+        timeLimitSec: 15,
+      },
+      {
+        prompt: 'Which ocean is the deepest on Earth?',
+        options: ['Atlantic Ocean', 'Indian Ocean', 'Pacific Ocean', 'Southern Ocean'],
+        correctIndex: 2,
+        timeLimitSec: 15,
+      },
+    ],
+  },
+  {
+    id: 'kitchen-food',
+    title: 'Kitchen & Food',
+    subtitle: '10 questions · Snacks, cooking & drinks',
+    questions: [
+      {
+        prompt: 'Which spice is the most expensive in the world by weight?',
+        options: ['Vanilla', 'Cardamom', 'Saffron', 'Star anise'],
+        correctIndex: 2,
+        timeLimitSec: 15,
+      },
+      {
+        prompt: 'What temperature does water boil at sea level in Celsius?',
+        options: ['90°C', '100°C', '110°C', '212°C'],
+        correctIndex: 1,
+        timeLimitSec: 10,
+      },
+      {
+        prompt: 'Which nut is used to make traditional pesto genovese?',
+        options: ['Walnuts', 'Cashews', 'Pine nuts', 'Almonds'],
+        correctIndex: 2,
+        timeLimitSec: 15,
+      },
+      {
+        prompt: 'Botanically speaking, which of these is actually a berry?',
+        options: ['Strawberry', 'Raspberry', 'Banana', 'Blackberry'],
+        correctIndex: 2,
+        timeLimitSec: 20,
+      },
+      {
+        prompt: 'What gives sourdough bread its signature tangy flavor?',
+        options: ['Baking soda', 'Lactic acid bacteria', 'Lemon juice', 'Cornstarch'],
+        correctIndex: 1,
+        timeLimitSec: 20,
+      },
+      {
+        prompt: 'Which country is the origin of the soup dish pho?',
+        options: ['Thailand', 'Vietnam', 'Malaysia', 'Cambodia'],
+        correctIndex: 1,
+        timeLimitSec: 15,
+      },
+      {
+        prompt: 'What part of the cacao plant is chocolate made from?',
+        options: ['The leaves', 'The bark', 'The seeds', 'The roots'],
+        correctIndex: 2,
+        timeLimitSec: 15,
+      },
+      {
+        prompt: 'Which cheese is traditionally served on an authentic Greek salad?',
+        options: ['Halloumi', 'Feta', 'Ricotta', 'Mozzarella'],
+        correctIndex: 1,
+        timeLimitSec: 15,
+      },
+      {
+        prompt: 'About how long does a soft-boiled chicken egg take in simmering water?',
+        options: ['2 minutes', '6 minutes', '14 minutes', '20 minutes'],
+        correctIndex: 1,
+        timeLimitSec: 15,
+      },
+      {
+        prompt: 'Which fruit carries its seeds on the outside?',
+        options: ['Kiwi', 'Fig', 'Strawberry', 'Pomegranate'],
+        correctIndex: 2,
+        timeLimitSec: 10,
+      },
+    ],
+  },
+  {
+    id: 'fast-odd',
+    title: 'Fast & Odd',
+    subtitle: '10 questions · Quick 5–15s timers',
+    questions: [
+      {
+        prompt: 'How many sides does a standard dodecagon have?',
+        options: ['10', '12', '14', '20'],
+        correctIndex: 1,
+        timeLimitSec: 10,
+      },
+      {
+        prompt: 'Which color is NOT on the Olympic rings?',
+        options: ['Green', 'Yellow', 'Purple', 'Black'],
+        correctIndex: 2,
+        timeLimitSec: 5,
+      },
+      {
+        prompt: 'What is the smallest prime number?',
+        options: ['0', '1', '2', '3'],
+        correctIndex: 2,
+        timeLimitSec: 10,
+      },
+      {
+        prompt: 'Which bird can fly backward?',
+        options: ['Kingfisher', 'Hummingbird', 'Swift', 'Swallow'],
+        correctIndex: 1,
+        timeLimitSec: 10,
+      },
+      {
+        prompt: 'How many keys are on a standard full-size piano?',
+        options: ['76', '84', '88', '92'],
+        correctIndex: 2,
+        timeLimitSec: 10,
+      },
+      {
+        prompt: 'Which planet is closest in size to Earth?',
+        options: ['Mars', 'Venus', 'Mercury', 'Neptune'],
+        correctIndex: 1,
+        timeLimitSec: 10,
+      },
+      {
+        prompt: 'What number does the Roman numeral L represent?',
+        options: ['10', '50', '100', '500'],
+        correctIndex: 1,
+        timeLimitSec: 5,
+      },
+      {
+        prompt: 'Which instrument did Louis Armstrong famously play?',
+        options: ['Saxophone', 'Trumpet', 'Trombone', 'Clarinet'],
+        correctIndex: 1,
+        timeLimitSec: 10,
+      },
+      {
+        prompt: 'How many minutes are in a full 24-hour day?',
+        options: ['1,200', '1,440', '1,680', '2,400'],
+        correctIndex: 1,
+        timeLimitSec: 15,
+      },
+      {
+        prompt: 'Which letter does NOT appear in any US state name?',
+        options: ['J', 'Q', 'X', 'Z'],
+        correctIndex: 1,
+        timeLimitSec: 15,
+      },
+    ],
+  },
+];
+
 export const TEXT_FORMAT_SPEC_EXAMPLE = `Whose turn was it to take the bins out on Tuesday?
 The person who noticed
 Nobody claimed it
