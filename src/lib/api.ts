@@ -190,7 +190,25 @@ export async function createRoom(): Promise<{ code: string; hostToken: string }>
     }
   }
 
-  // Transport 3: WebSocket fallback
+  // Transport 3: GET /_game/rooms/create (in case /api/* is intercepted)
+  if (lastError?.kind !== 'auth') {
+    try {
+      return await tryHttp(`/_game/rooms/create?t=${Date.now()}`, {
+        method: 'GET',
+      });
+    } catch (err) {
+      const apiErr =
+        err instanceof ApiRequestError
+          ? err
+          : new ApiRequestError(
+              'network',
+              err instanceof Error && err.message ? err.message : 'Network error',
+            );
+      lastError = apiErr;
+    }
+  }
+
+  // Transport 4: WebSocket fallback
   if (lastError?.kind !== 'auth') {
     try {
       return await createRoomViaWebSocket();
@@ -203,11 +221,12 @@ export async function createRoom(): Promise<{ code: string; hostToken: string }>
     throw lastError;
   }
 
+  const hostHint = typeof window !== 'undefined' ? window.location.host : '';
   const reason = lastError?.status
-    ? `HTTP ${lastError.status}`
+    ? `HTTP ${lastError.status} on ${hostHint}`
     : lastError?.message && lastError.message !== CONNECTION_MSG
-      ? lastError.message
-      : 'network blocked';
+      ? `${lastError.message} on ${hostHint}`
+      : `network blocked on ${hostHint}`;
   throw new ApiRequestError(
     lastError?.kind ?? 'network',
     `Couldn't reach the game server (${reason}). Reload the page and try again.`,

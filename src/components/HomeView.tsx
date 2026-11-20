@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ArrowRight, Play, Ticket } from 'lucide-react';
-import { ApiRequestError, createRoom } from '../lib/api';
+import { createRoom } from '../lib/api';
 import { getHouseRecord } from '../lib/houseRecord';
 import {
   clearHostSession,
@@ -19,7 +19,6 @@ interface HomeViewProps {
 export function HomeView({ onNavigateHost, onNavigateJoin, onNavigatePlay }: HomeViewProps) {
   const [creatingRoom, setCreatingRoom] = useState(false);
   const [networkError, setNetworkError] = useState<string | null>(null);
-  const [needsRefresh, setNeedsRefresh] = useState(false);
   const [recentHost, setRecentHost] = useState(() => getRecentHostSession());
   const recentPlayer = getRecentPlayerSession();
   const houseRecord = getHouseRecord();
@@ -27,14 +26,12 @@ export function HomeView({ onNavigateHost, onNavigateJoin, onNavigatePlay }: Hom
   const handleHostCreate = async () => {
     setCreatingRoom(true);
     setNetworkError(null);
-    setNeedsRefresh(false);
     try {
       const data = await createRoom();
       saveHostSession({ code: data.code, hostToken: data.hostToken });
       onNavigateHost(data.hostToken);
     } catch (err) {
       console.error('[noggin] handleHostCreate failed:', err);
-      setNeedsRefresh(err instanceof ApiRequestError && err.kind === 'auth');
       setNetworkError(
         err instanceof Error
           ? err.message
@@ -127,15 +124,13 @@ export function HomeView({ onNavigateHost, onNavigateJoin, onNavigatePlay }: Hom
               {networkError && (
                 <div className="flex flex-wrap items-center gap-3" role="alert">
                   <p className="text-sm font-semibold text-danger">{networkError}</p>
-                  {needsRefresh && (
-                    <button
-                      type="button"
-                      onClick={() => window.location.reload()}
-                      className="btn-secondary px-3 py-1.5 text-xs cursor-pointer"
-                    >
-                      Refresh page
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => window.location.reload()}
+                    className="btn-secondary px-3 py-1.5 text-xs cursor-pointer"
+                  >
+                    Refresh page
+                  </button>
                 </div>
               )}
 

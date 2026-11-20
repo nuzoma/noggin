@@ -18,6 +18,12 @@ interface SocketMeta {
 
 async function startServer() {
   const app = express();
+  app.use((req, _res, next) => {
+    if (req.path.startsWith('/api') || req.path.startsWith('/_game')) {
+      console.log(`[http] ${req.method} ${req.originalUrl}`);
+    }
+    next();
+  });
   app.use(express.json({ limit: '1mb' }));
   app.use((err: unknown, _req: express.Request, res: express.Response, next: express.NextFunction) => {
     if (err && typeof err === 'object' && 'status' in err && (err as { status: number }).status === 400) {
@@ -34,17 +40,16 @@ async function startServer() {
     res.json({ ok: true });
   });
 
-  app.post('/api/rooms', (_req, res) => {
+  const handleCreateRoom = (_req: express.Request, res: express.Response) => {
     const { code, hostToken } = roomManager.createRoom();
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
     res.json({ code, hostToken });
-  });
+  };
 
-  app.get('/api/rooms/create', (_req, res) => {
-    const { code, hostToken } = roomManager.createRoom();
-    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
-    res.json({ code, hostToken });
-  });
+  app.post('/api/rooms', handleCreateRoom);
+  app.get('/api/rooms/create', handleCreateRoom);
+  app.post('/_game/rooms', handleCreateRoom);
+  app.get('/_game/rooms/create', handleCreateRoom);
 
   app.get('/api/rooms/:code/check', (req, res) => {
     const room = roomManager.getRoomByCode(req.params.code);
