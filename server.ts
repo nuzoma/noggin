@@ -19,6 +19,13 @@ interface SocketMeta {
 async function startServer() {
   const app = express();
   app.use(express.json({ limit: '1mb' }));
+  app.use((err: unknown, _req: express.Request, res: express.Response, next: express.NextFunction) => {
+    if (err && typeof err === 'object' && 'status' in err && (err as { status: number }).status === 400) {
+      res.status(400).json({ ok: false, error: 'Invalid JSON request body.' });
+      return;
+    }
+    next(err);
+  });
 
   const roomManager = new RoomManager();
 
@@ -101,6 +108,12 @@ async function startServer() {
 
       if (msg.type === 'ping') {
         ws.send(JSON.stringify({ type: 'pong' }));
+        return;
+      }
+
+      if (msg.type === 'host:create_room') {
+        const { code, hostToken } = roomManager.createRoom();
+        ws.send(JSON.stringify({ type: 'host:created', payload: { code, hostToken } }));
         return;
       }
 

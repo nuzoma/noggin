@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { joinRoom } from '../lib/api';
 import { getPlayerSession, savePlayerSession } from '../lib/storage';
 
 interface JoinViewProps {
@@ -37,36 +38,21 @@ export function JoinView({
     setErrorMsg(null);
     try {
       const existing = getPlayerSession(cleanCode);
-      const res = await fetch(`/api/rooms/${encodeURIComponent(cleanCode)}/join`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: cleanName.slice(0, 16),
-          existingPlayerId:
-            existing && existing.name.toLowerCase() === cleanName.toLowerCase()
-              ? existing.playerId
-              : undefined,
-        }),
+      const data = await joinRoom(cleanCode, {
+        name: cleanName.slice(0, 16),
+        existingPlayerId:
+          existing && existing.name.toLowerCase() === cleanName.toLowerCase()
+            ? existing.playerId
+            : undefined,
       });
-      const data = (await res.json()) as {
-        ok: boolean;
-        code?: string;
-        playerId?: string;
-        name?: string;
-        error?: string;
-      };
-      if (!res.ok || !data.ok || !data.code || !data.playerId || !data.name) {
-        setErrorMsg(
-          data.error ||
-            "That code didn't work. Double-check with the host — codes are 5–6 letters.",
-        );
-        setJoining(false);
-        return;
-      }
       savePlayerSession({ code: data.code, playerId: data.playerId, name: data.name });
       onNavigatePlay(data.code);
-    } catch {
-      setErrorMsg("That didn't go through. Check your connection and try again.");
+    } catch (err) {
+      setErrorMsg(
+        err instanceof Error
+          ? err.message
+          : "That didn't go through. Check your connection and try again.",
+      );
       setJoining(false);
     }
   };

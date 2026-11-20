@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ArrowRight, Play, Ticket } from 'lucide-react';
+import { ApiRequestError, createRoom } from '../lib/api';
 import { getHouseRecord } from '../lib/houseRecord';
 import {
   clearHostSession,
@@ -18,6 +19,7 @@ interface HomeViewProps {
 export function HomeView({ onNavigateHost, onNavigateJoin, onNavigatePlay }: HomeViewProps) {
   const [creatingRoom, setCreatingRoom] = useState(false);
   const [networkError, setNetworkError] = useState<string | null>(null);
+  const [needsRefresh, setNeedsRefresh] = useState(false);
   const [recentHost, setRecentHost] = useState(() => getRecentHostSession());
   const recentPlayer = getRecentPlayerSession();
   const houseRecord = getHouseRecord();
@@ -25,19 +27,20 @@ export function HomeView({ onNavigateHost, onNavigateJoin, onNavigatePlay }: Hom
   const handleHostCreate = async () => {
     setCreatingRoom(true);
     setNetworkError(null);
+    setNeedsRefresh(false);
     try {
-      const res = await fetch('/api/rooms', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      });
-      if (!res.ok) throw new Error('Request failed');
-      const data = (await res.json()) as { code: string; hostToken: string };
-      if (data.hostToken && data.code) {
-        saveHostSession({ code: data.code, hostToken: data.hostToken });
-        onNavigateHost(data.hostToken);
+      const data = await createRoom();
+      saveHostSession({ code: data.code, hostToken: data.hostToken });
+      onNavigateHost(data.hostToken);
+    } catch (err) {
+      if (err instanceof ApiRequestError && err.kind === 'auth') {
+        setNeedsRefresh(true);
       }
-    } catch {
-      setNetworkError("That didn't go through. Check your connection and try again.");
+      setNetworkError(
+        err instanceof Error
+          ? err.message
+          : "That didn't go through. Check your connection and try again.",
+      );
       setCreatingRoom(false);
     }
   };
@@ -123,9 +126,18 @@ export function HomeView({ onNavigateHost, onNavigateJoin, onNavigatePlay }: Hom
               </div>
 
               {networkError && (
-                <p className="text-sm font-semibold text-danger" role="alert">
-                  {networkError}
-                </p>
+                <div className="flex flex-wrap items-center gap-3" role="alert">
+                  <p className="text-sm font-semibold text-danger">{networkError}</p>
+                  {needsRefresh && (
+                    <button
+                      type="button"
+                      onClick={() => window.location.reload()}
+                      className="btn-secondary px-3 py-1.5 text-xs cursor-pointer"
+                    >
+                      Refresh page
+                    </button>
+                  )}
+                </div>
               )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">

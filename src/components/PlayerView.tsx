@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 import { ArrowRight, Check, Clock, Lock, PauseCircle, X } from 'lucide-react';
 import type { PlayerRoomView, RoomStatus, WSServerMessage } from '../shared/types';
+import { joinRoom } from '../lib/api';
 import { clearPlayerSession, getPlayerSession, savePlayerSession } from '../lib/storage';
 import { playFanfare, playLockIn, playReveal } from '../lib/sound';
 import { useCountdown } from '../lib/useCountdown';
@@ -118,31 +119,18 @@ export function PlayerView({ code, onExitHome }: PlayerViewProps) {
     setJoining(true);
     setJoinError(null);
     try {
-      const res = await fetch(`/api/rooms/${encodeURIComponent(normalizedCode)}/join`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: cleanName.slice(0, 16) }),
+      const data = await joinRoom(normalizedCode, {
+        name: cleanName.slice(0, 16),
       });
-      const data = (await res.json()) as {
-        ok: boolean;
-        code?: string;
-        playerId?: string;
-        name?: string;
-        error?: string;
-      };
-      if (!res.ok || !data.ok || !data.code || !data.playerId || !data.name) {
-        setJoinError(
-          data.error ||
-            "That code didn't work. Double-check with the host — codes are 5–6 letters.",
-        );
-        setJoining(false);
-        return;
-      }
       const nextSession = { code: data.code, playerId: data.playerId, name: data.name };
       savePlayerSession(nextSession);
       setSession(nextSession);
-    } catch {
-      setJoinError("That didn't go through. Check your connection and try again.");
+    } catch (err) {
+      setJoinError(
+        err instanceof Error
+          ? err.message
+          : "That didn't go through. Check your connection and try again.",
+      );
       setJoining(false);
     }
   };

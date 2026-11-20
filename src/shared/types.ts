@@ -114,6 +114,7 @@ export interface PlayerRoomView {
 }
 
 export type WSServerMessage =
+  | { type: 'host:created'; payload: { code: string; hostToken: string } }
   | { type: 'host:state'; payload: HostRoomView }
   | { type: 'screen:state'; payload: ScreenRoomView }
   | { type: 'player:state'; payload: PlayerRoomView }
@@ -123,6 +124,7 @@ export type WSServerMessage =
   | { type: 'pong' };
 
 export type WSClientMessage =
+  | { type: 'host:create_room' }
   | { type: 'auth:host'; hostToken: string }
   | { type: 'auth:screen'; code: string }
   | { type: 'auth:player'; code: string; playerId: string }

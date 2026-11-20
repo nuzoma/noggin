@@ -12,6 +12,7 @@ import {
   VolumeX,
 } from 'lucide-react';
 import type { HostRoomView, QuestionInput, RoomStatus, WSServerMessage } from '../shared/types';
+import { createRoom, fetchHostRoom } from '../lib/api';
 import {
   getHouseRecord,
   recordRoundWinners,
@@ -108,6 +109,22 @@ export function HostView({ hostToken, onExitHome, onNewGame }: HostViewProps) {
   });
 
   useEffect(() => {
+    let cancelled = false;
+    fetchHostRoom(hostToken).then((result) => {
+      if (cancelled) return;
+      if (result.ok) {
+        setRoom((prev) => prev ?? result.room);
+      } else if (result.notFound) {
+        clearHostSession();
+        setClosedMsg(result.error || 'Host room not found or expired.');
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [hostToken]);
+
+  useEffect(() => {
     setConfirmKickId(null);
     setConfirmCancel(false);
     if (room?.status !== 'finished') {
@@ -157,15 +174,17 @@ export function HostView({ hostToken, onExitHome, onNewGame }: HostViewProps) {
   };
 
   const handleCreateAnother = async () => {
-    const res = await fetch('/api/rooms', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({}),
-    });
-    const data = (await res.json()) as { code: string; hostToken: string };
-    if (data.hostToken && data.code) {
+    setErrorMsg(null);
+    try {
+      const data = await createRoom();
       saveHostSession({ code: data.code, hostToken: data.hostToken });
       onNewGame(data.hostToken);
+    } catch (err) {
+      setErrorMsg(
+        err instanceof Error
+          ? err.message
+          : "That didn't go through. Check your connection and try again.",
+      );
     }
   };
 
@@ -274,7 +293,7 @@ export function HostView({ hostToken, onExitHome, onNewGame }: HostViewProps) {
         </div>
       </header>
 
-      {wsStatus === 'reconnecting' && (
+      {(wsStatus === 'reconnecting' || wsStatus === 'closed') && (
         <div className="bg-warning-soft border-b border-warning px-4 py-2 text-center text-xs font-bold text-warning">
           Hold on — reconnecting… Your spot&apos;s saved.
         </div>

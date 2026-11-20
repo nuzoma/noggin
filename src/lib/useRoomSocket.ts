@@ -8,6 +8,11 @@ interface UseRoomSocketOptions {
   onMessage: (msg: WSServerMessage) => void;
 }
 
+const COALESCEABLE_TYPES = new Set<WSClientMessage['type']>([
+  'host:set_title',
+  'host:set_questions',
+]);
+
 export function useRoomSocket({ authMessage, onMessage }: UseRoomSocketOptions) {
   const wsRef = useRef<WebSocket | null>(null);
   const onMessageRef = useRef(onMessage);
@@ -16,11 +21,16 @@ export function useRoomSocket({ authMessage, onMessage }: UseRoomSocketOptions) 
   const authRef = useRef(authMessage);
   authRef.current = authMessage;
 
+  const pendingQueueRef = useRef<WSClientMessage[]>([]);
+
   const [status, setStatus] = useState<ConnectionStatus>('connecting');
   const shouldReconnectRef = useRef(true);
   const retryDelayRef = useRef(600);
 
+  const authKey = JSON.stringify(authMessage);
+
   useEffect(() => {
+    pendingQueueRef.current = [];
     if (!authMessage) return;
     shouldReconnectRef.current = true;
     let timer: number | undefined;
@@ -38,6 +48,15 @@ export function useRoomSocket({ authMessage, onMessage }: UseRoomSocketOptions) 
         setStatus('connected');
         if (authRef.current) {
           ws.send(JSON.stringify(authRef.current));
+        }
+        if (pendingQueueRef.current.length > 0) {
+          const queued = pendingQueueRef.current;
+          pendingQueueRef.current = [];
+          for (const queuedMsg of queued) {
+            if (ws.readyState === WebSocket.OPEN) {
+              ws.send(JSON.stringify(queuedMsg));
+            }
+          }
         }
         pingInterval = window.setInterval(() => {
           if (ws.readyState === WebSocket.OPEN) {
@@ -83,12 +102,23 @@ export function useRoomSocket({ authMessage, onMessage }: UseRoomSocketOptions) 
         wsRef.current = null;
       }
     };
-  }, [JSON.stringify(authMessage)]);
+  }, [authKey]);
 
   const send = useCallback((msg: WSClientMessage) => {
     const ws = wsRef.current;
     if (ws && ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify(msg));
+      return true;
+    }
+    if (
+      msg.type !== 'ping' &&
+      msg.type !== 'host:create_room' &&
+      !msg.type.startsWith('auth:')
+    ) {
+      if (COALESCEABLE_TYPES.has(msg.type)) {
+        pendingQueueRef.current = pendingQueueRef.current.filter((m) => m.type !== msg.type);
+      }
+      pendingQueueRef.current.push(msg);
       return true;
     }
     return false;
