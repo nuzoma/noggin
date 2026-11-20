@@ -36,6 +36,13 @@ async function startServer() {
 
   app.post('/api/rooms', (_req, res) => {
     const { code, hostToken } = roomManager.createRoom();
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+    res.json({ code, hostToken });
+  });
+
+  app.get('/api/rooms/create', (_req, res) => {
+    const { code, hostToken } = roomManager.createRoom();
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
     res.json({ code, hostToken });
   });
 

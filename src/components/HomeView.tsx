@@ -33,13 +33,12 @@ export function HomeView({ onNavigateHost, onNavigateJoin, onNavigatePlay }: Hom
       saveHostSession({ code: data.code, hostToken: data.hostToken });
       onNavigateHost(data.hostToken);
     } catch (err) {
-      if (err instanceof ApiRequestError && err.kind === 'auth') {
-        setNeedsRefresh(true);
-      }
+      console.error('[noggin] handleHostCreate failed:', err);
+      setNeedsRefresh(err instanceof ApiRequestError && err.kind === 'auth');
       setNetworkError(
         err instanceof Error
           ? err.message
-          : "That didn't go through. Check your connection and try again.",
+          : "Couldn't reach the game server. Reload the page and try again.",
       );
       setCreatingRoom(false);
     }

@@ -136,42 +136,83 @@ function createRoomViaWebSocket(timeoutMs = 4500): Promise<{ code: string; hostT
 export async function createRoom(): Promise<{ code: string; hostToken: string }> {
   let lastError: ApiRequestError | null = null;
 
+  const tryHttp = async (url: string, init: RequestInit): Promise<{ code: string; hostToken: string }> => {
+    const res = await fetch(url, {
+      ...init,
+      credentials: 'same-origin',
+      cache: 'no-store',
+      redirect: 'manual',
+    });
+    const data = await parseApiJson<{ code?: string; hostToken?: string; error?: string }>(res);
+    if (!res.ok || !data.code || !data.hostToken) {
+      throw new ApiRequestError('http', data.error || `HTTP ${res.status}`, res.status);
+    }
+    return { code: data.code, hostToken: data.hostToken };
+  };
+
+  // Transport 1: POST /api/rooms
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
-      const res = await fetch('/api/rooms', {
+      return await tryHttp('/api/rooms', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({}),
-        credentials: 'same-origin',
-        cache: 'no-store',
-        redirect: 'manual',
       });
-
-      const data = await parseApiJson<{ code?: string; hostToken?: string; error?: string }>(res);
-      if (!res.ok || !data.code || !data.hostToken) {
-        throw new ApiRequestError('http', data.error || CONNECTION_MSG, res.status);
-      }
-      return { code: data.code, hostToken: data.hostToken };
     } catch (err) {
       const apiErr =
         err instanceof ApiRequestError
           ? err
-          : new ApiRequestError('network', CONNECTION_MSG);
+          : new ApiRequestError(
+              'network',
+              err instanceof Error && err.message ? err.message : 'Network error',
+            );
       lastError = apiErr;
-      if (!isRetriableError(apiErr) || attempt === 1) break;
-      await delay(350);
+      if (apiErr.kind === 'auth' || !isRetriableError(apiErr) || attempt === 1) break;
+      await delay(300);
     }
   }
 
-  // Fallback to WebSocket transport in case HTTP POST was blocked/intercepted
-  try {
-    return await createRoomViaWebSocket();
-  } catch {
-    if (lastError) {
-      throw lastError;
+  // Transport 2: GET /api/rooms/create (if not an auth redirect)
+  if (lastError?.kind !== 'auth') {
+    try {
+      return await tryHttp(`/api/rooms/create?t=${Date.now()}`, {
+        method: 'GET',
+      });
+    } catch (err) {
+      const apiErr =
+        err instanceof ApiRequestError
+          ? err
+          : new ApiRequestError(
+              'network',
+              err instanceof Error && err.message ? err.message : 'Network error',
+            );
+      lastError = apiErr;
     }
-    throw new ApiRequestError('network', CONNECTION_MSG);
   }
+
+  // Transport 3: WebSocket fallback
+  if (lastError?.kind !== 'auth') {
+    try {
+      return await createRoomViaWebSocket();
+    } catch {
+      // Fall through to report diagnostic error
+    }
+  }
+
+  if (lastError?.kind === 'auth') {
+    throw lastError;
+  }
+
+  const reason = lastError?.status
+    ? `HTTP ${lastError.status}`
+    : lastError?.message && lastError.message !== CONNECTION_MSG
+      ? lastError.message
+      : 'network blocked';
+  throw new ApiRequestError(
+    lastError?.kind ?? 'network',
+    `Couldn't reach the game server (${reason}). Reload the page and try again.`,
+    lastError?.status,
+  );
 }
 
 export async function joinRoom(
