@@ -1,0 +1,6 @@
+{
+  "name": "noggin",
+  "description": "The quiz your house keeps coming back to. No sign-ups, no apps, just your housemates and a running tally.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
