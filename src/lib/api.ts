@@ -222,6 +222,14 @@ export async function createRoom(): Promise<{ code: string; hostToken: string }>
   }
 
   const hostHint = typeof window !== 'undefined' ? window.location.host : '';
+  if (lastError?.status === 404) {
+    throw new ApiRequestError(
+      'http',
+      `No game server is running on ${hostHint} (HTTP 404). Open the app from its full-stack URL (such as the AI Studio preview/shared link) rather than static-only hosting.`,
+      404,
+    );
+  }
+
   const reason = lastError?.status
     ? `HTTP ${lastError.status} on ${hostHint}`
     : lastError?.message && lastError.message !== CONNECTION_MSG
