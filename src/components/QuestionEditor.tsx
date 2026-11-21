@@ -579,7 +579,7 @@ export function QuestionEditor({
           aria-modal="true"
           aria-label="Preset rounds"
         >
-          <div className="bg-surface rounded-3xl border border-border w-full max-w-xl max-h-[90vh] overflow-y-auto p-5 sm:p-6 space-y-4 min-w-0">
+          <div className="bg-surface rounded-3xl border border-border w-full max-w-xl max-h-[88vh] flex flex-col p-5 sm:p-6 gap-4 min-w-0">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <h2 className="font-display font-extrabold text-xl text-text">Preset rounds</h2>
@@ -635,7 +635,7 @@ export function QuestionEditor({
               </div>
             </div>
 
-            <div className="divide-y divide-border rounded-2xl border border-border overflow-hidden">
+            <div className="divide-y divide-border rounded-2xl border border-border overflow-y-auto flex-1 min-h-0">
               {PRESET_PACKS.map((pack) => {
                 const isPending = pendingPresetId === pack.id;
                 const canAppend = questions.length + pack.questions.length <= MAX_QUESTIONS;
