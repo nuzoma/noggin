@@ -2,6 +2,7 @@ import { useCallback, useRef, useState } from 'react';
 import { Check, PauseCircle, Users } from 'lucide-react';
 import type { RoomStatus, ScreenRoomView, WSServerMessage } from '../shared/types';
 import { playFanfare, playReveal } from '../lib/sound';
+import { getShareUrlInfo } from '../lib/shareUrl';
 import { useCountdown } from '../lib/useCountdown';
 import { useRoomSocket } from '../lib/useRoomSocket';
 import { ConfettiBurst } from './ConfettiBurst';
@@ -152,8 +153,9 @@ export function ScreenView({ code, onExitHome }: ScreenViewProps) {
         <main className="flex-1 flex flex-col">
           <section className="border-b border-border bg-surface pt-10 pb-8 px-6">
             <div className="max-w-5xl mx-auto text-center space-y-5">
-              <p className="text-base font-bold text-text">
-                Share this with the house · Join on your phone at {window.location.host}
+              <p className="text-base font-bold text-text break-words">
+                Share this with the house · Join on your phone at{' '}
+                <span className="font-mono break-all">{getShareUrlInfo().effectiveHost}</span>
               </p>
               <div className="inline-block">
                 <span className="room-code inline-block text-6xl sm:text-8xl px-12 py-6 leading-none tabular-nums">
@@ -274,10 +276,6 @@ export function ScreenView({ code, onExitHome }: ScreenViewProps) {
       {/* REVEAL (.state-reveal) */}
       {view.status === 'reveal' && view.currentQuestion && (
         <main className="flex-1 flex flex-col">
-          <ConfettiBurst
-            triggerKey={`screen-reveal-${view.roundNumber}-${view.currentQuestionIndex}`}
-            count={92}
-          />
           <section className="border-b border-border bg-surface pt-8 pb-6 px-6">
             <div className="max-w-5xl mx-auto space-y-3">
               <SegmentedProgress
@@ -380,6 +378,7 @@ export function ScreenView({ code, onExitHome }: ScreenViewProps) {
       {/* FINISHED (.state-podium, flat --bg in cast-mode) */}
       {view.status === 'finished' && (
         <main className="flex-1 flex flex-col">
+          <ConfettiBurst triggerKey={`screen-finished-${view.roundNumber}`} count={110} />
           <section className="pt-8 pb-4 px-6 text-center">
             <p className="text-sm font-bold text-accent">
               {view.title} · Room {view.code}

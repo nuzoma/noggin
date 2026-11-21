@@ -15,12 +15,12 @@ import {
 } from 'lucide-react';
 import type { HostRoomView, QuestionInput, RoomStatus, WSServerMessage } from '../shared/types';
 import { createRoom, fetchHostRoom } from '../lib/api';
-import {
-  getHouseRecord,
-  recordRoundWinners,
-  type HouseRecordEntry,
-} from '../lib/houseRecord';
 import { clearHostSession, saveHostSession } from '../lib/storage';
+import {
+  clearCustomOrigin,
+  getShareUrlInfo,
+  saveCustomOrigin,
+} from '../lib/shareUrl';
 import { isSoundMuted, playFanfare, playReveal, playTap, setSoundMuted } from '../lib/sound';
 import { useCountdown } from '../lib/useCountdown';
 import { useRoomSocket } from '../lib/useRoomSocket';
@@ -72,9 +72,11 @@ export function HostView({ hostToken, onExitHome, onNewGame }: HostViewProps) {
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [confirmKickId, setConfirmKickId] = useState<string | null>(null);
   const [showPlayerList, setShowPlayerList] = useState(false);
+  const [shareInfo, setShareInfo] = useState(() => getShareUrlInfo());
+  const [editingShareUrl, setEditingShareUrl] = useState(false);
+  const [shareUrlInput, setShareUrlInput] = useState('');
+  const [shareUrlError, setShareUrlError] = useState<string | null>(null);
   const [muted, setMuted] = useState(() => isSoundMuted());
-  const [houseRecord, setHouseRecord] = useState<HouseRecordEntry[]>(() => getHouseRecord());
-  const [newlyAddedWinners, setNewlyAddedWinners] = useState<string[]>([]);
   const prevStatusRef = useRef<string | null>(null);
 
   const handleWSMessage = useCallback((msg: WSServerMessage) => {
@@ -132,29 +134,7 @@ export function HostView({ hostToken, onExitHome, onNewGame }: HostViewProps) {
     setConfirmKickId(null);
     setConfirmCancel(false);
     setShowPlayerList(false);
-    if (room?.status !== 'finished') {
-      setNewlyAddedWinners([]);
-    }
   }, [room?.status]);
-
-  // Record finished round winners into monthly House Record (FR-31)
-  useEffect(() => {
-    if (!room || room.status !== 'finished') return;
-    if (room.leaderboard.length < 2) {
-      setHouseRecord(getHouseRecord());
-      return;
-    }
-    const topScore = room.leaderboard[0].score;
-    const winners = room.leaderboard
-      .filter((entry) => entry.score === topScore)
-      .map((entry) => entry.name);
-    const roundKey = `${room.code}-${room.roundNumber}`;
-    const result = recordRoundWinners(roundKey, winners);
-    setHouseRecord(result.entries);
-    if (result.newlyAddedNames.length > 0) {
-      setNewlyAddedWinners(result.newlyAddedNames);
-    }
-  }, [room]);
 
   const toggleMute = () => {
     const next = !muted;
@@ -162,7 +142,9 @@ export function HostView({ hostToken, onExitHome, onNewGame }: HostViewProps) {
     setSoundMuted(next);
   };
 
-  const joinUrl = room ? `${window.location.origin}/?code=${room.code}` : '';
+  const joinUrl = room && shareInfo.effectiveOrigin
+    ? `${shareInfo.effectiveOrigin}/?code=${encodeURIComponent(room.code)}`
+    : '';
 
   const copyCode = () => {
     if (!room) return;
@@ -176,6 +158,26 @@ export function HostView({ hostToken, onExitHome, onNewGame }: HostViewProps) {
     navigator.clipboard.writeText(joinUrl).catch(() => {});
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 1800);
+  };
+
+  const handleSaveCustomShareUrl = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = shareUrlInput.trim();
+    if (!trimmed) {
+      clearCustomOrigin();
+      setShareInfo(getShareUrlInfo());
+      setShareUrlError(null);
+      setEditingShareUrl(false);
+      return;
+    }
+    const saved = saveCustomOrigin(trimmed);
+    if (!saved) {
+      setShareUrlError('Enter a valid URL (for example https://your-app.onrender.com).');
+      return;
+    }
+    setShareInfo(getShareUrlInfo());
+    setShareUrlError(null);
+    setEditingShareUrl(false);
   };
 
   const handleCreateAnother = async () => {
@@ -339,7 +341,7 @@ export function HostView({ hostToken, onExitHome, onNewGame }: HostViewProps) {
                 <p className="text-xs font-bold tracking-wide text-muted">Room code</p>
                 <p className="text-sm font-medium text-muted break-words">
                   Share this with the house. Join on phones at{' '}
-                  <span className="font-mono text-text break-all">{window.location.host}</span>
+                  <span className="font-mono text-text break-all">{shareInfo.effectiveHost}</span>
                 </p>
               </div>
 
@@ -375,6 +377,85 @@ export function HostView({ hostToken, onExitHome, onNewGame }: HostViewProps) {
               <p className="text-xs sm:text-sm font-medium text-muted tabular-nums break-words">
                 {room.title} · {totalQuestions} questions
               </p>
+
+              {(shareInfo.isDevPreview || shareInfo.isLocalhost || shareInfo.customOrigin) && (
+                <div className="max-w-xl mx-auto pt-1 space-y-2">
+                  <p className="text-xs text-muted leading-relaxed">
+                    {shareInfo.isDevPreview ? (
+                      <>
+                        Using public join link instead of the private preview URL. For other phones to join live, open the{' '}
+                        <a
+                          href={shareInfo.effectiveOrigin}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-semibold text-accent underline underline-offset-2"
+                        >
+                          public app link
+                        </a>{' '}
+                        to host, or{' '}
+                      </>
+                    ) : (
+                      <>Join links point to <span className="font-mono text-text">{shareInfo.effectiveHost}</span>. </>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShareUrlInput(shareInfo.customOrigin ?? shareInfo.effectiveOrigin);
+                        setShareUrlError(null);
+                        setEditingShareUrl((prev) => !prev);
+                      }}
+                      className="font-semibold text-accent underline underline-offset-2 cursor-pointer"
+                    >
+                      {editingShareUrl ? 'cancel' : 'change join URL'}
+                    </button>
+                    {shareInfo.customOrigin && !editingShareUrl && (
+                      <>
+                        {' · '}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            clearCustomOrigin();
+                            setShareInfo(getShareUrlInfo());
+                          }}
+                          className="font-semibold text-muted hover:text-text underline underline-offset-2 cursor-pointer"
+                        >
+                          reset
+                        </button>
+                      </>
+                    )}
+                  </p>
+
+                  {editingShareUrl && (
+                    <form
+                      onSubmit={handleSaveCustomShareUrl}
+                      className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-2"
+                    >
+                      <input
+                        type="text"
+                        value={shareUrlInput}
+                        onChange={(e) => {
+                          setShareUrlInput(e.target.value);
+                          setShareUrlError(null);
+                        }}
+                        placeholder="https://your-app.onrender.com"
+                        aria-label="Custom public join URL"
+                        className="flex-1 min-w-0 h-9 rounded-[10px] border border-border bg-surface-2 px-3 text-xs font-mono text-text placeholder:text-faint focus:outline-none focus:border-accent"
+                      />
+                      <button
+                        type="submit"
+                        className="btn-secondary px-3.5 h-9 text-xs cursor-pointer whitespace-nowrap"
+                      >
+                        Save link
+                      </button>
+                    </form>
+                  )}
+                  {shareUrlError && (
+                    <p className="text-xs font-semibold text-danger" role="alert">
+                      {shareUrlError}
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           </section>
 
@@ -616,7 +697,6 @@ export function HostView({ hostToken, onExitHome, onNewGame }: HostViewProps) {
       {/* STATE 4: REVEAL (.state-reveal, bright green payoff, no gradient) */}
       {room.status === 'reveal' && currentQuestion && (
         <main className="flex-1 flex flex-col min-w-0">
-          <ConfettiBurst triggerKey={`host-reveal-${room.roundNumber}-${room.currentQuestionIndex}`} />
           <section className="border-b border-border bg-surface pt-6 pb-6 px-4 sm:px-6">
             <div className="max-w-5xl mx-auto space-y-3 min-w-0">
               <SegmentedProgress total={totalQuestions} currentIndex={room.currentQuestionIndex} />
@@ -778,6 +858,7 @@ export function HostView({ hostToken, onExitHome, onNewGame }: HostViewProps) {
       {/* STATE 5: FINISHED / PODIUM (.state-podium .bg-podium, gold celebration) */}
       {room.status === 'finished' && (
         <main className="flex-1 flex flex-col min-w-0">
+          <ConfettiBurst triggerKey={`host-finished-${room.roundNumber}`} count={96} />
           <section className="pt-8 pb-4 px-4 sm:px-6 text-center">
             <div className="max-w-4xl mx-auto space-y-1.5 min-w-0">
               <p className="text-xs font-bold text-accent break-words">
@@ -794,37 +875,6 @@ export function HostView({ hostToken, onExitHome, onNewGame }: HostViewProps) {
 
           <div className="max-w-4xl w-full mx-auto px-4 sm:px-6 py-8 space-y-8 flex-1 min-w-0">
             <PodiumDisplay entries={room.leaderboard} large />
-
-            {/* House Record (FR-31) */}
-            {houseRecord.length > 0 && (
-              <div className="bg-surface rounded-3xl border border-border p-5 sm:p-6 space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1">
-                  <h2 className="font-display font-extrabold text-lg text-text">House record</h2>
-                  <p className="text-xs text-muted">
-                    Resets on the 1st. Purely for bragging rights.
-                  </p>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  {houseRecord.slice(0, 6).map((entry) => {
-                    const isNew = newlyAddedWinners.includes(entry.name);
-                    return (
-                      <div
-                        key={entry.name}
-                        className="bg-surface-2 rounded-2xl border border-border px-4 py-3 flex items-center justify-between gap-3 min-w-0"
-                      >
-                        <span className="font-display font-bold text-base text-text truncate">
-                          {entry.name}
-                        </span>
-                        <span className="font-mono font-bold text-xs text-muted tabular-nums whitespace-nowrap shrink-0">
-                          {entry.wins} {entry.wins === 1 ? 'win' : 'wins'} this month
-                          {isNew ? ' (+1)' : ''}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
 
             {room.leaderboard.length > 0 && (
               <div className="bg-surface rounded-3xl border border-border overflow-hidden">

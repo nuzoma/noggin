@@ -439,11 +439,6 @@ export function PlayerView({ code, onExitHome }: PlayerViewProps) {
       {/* REVEAL (.state-reveal, green payoff) */}
       {view.status === 'reveal' && view.currentQuestion && (
         <>
-          <ConfettiBurst
-            triggerKey={`player-reveal-${view.roundNumber}-${view.currentQuestionIndex}`}
-            active={view.myAnswer?.isCorrect === true}
-            count={64}
-          />
           <header className="border-b border-border bg-surface pt-5 pb-4 px-4 sm:px-5">
             <div className="max-w-lg mx-auto text-center space-y-1.5">
               <p className="font-mono text-xs font-bold text-accent tabular-nums">
@@ -555,6 +550,7 @@ export function PlayerView({ code, onExitHome }: PlayerViewProps) {
       {/* FINISHED (.state-podium .bg-podium, gold celebration) */}
       {view.status === 'finished' && (
         <>
+          <ConfettiBurst triggerKey={`player-finished-${view.roundNumber}`} count={80} />
           <header className="pt-7 pb-3 px-5 text-center">
             <p className="font-mono text-xs font-bold text-accent">That&apos;s a wrap.</p>
             <h1 className="font-display font-extrabold text-3xl text-text mt-1">
