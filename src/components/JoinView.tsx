@@ -70,18 +70,20 @@ export function JoinView({
         </button>
       </header>
 
-      <main className="flex-1 max-w-lg w-full mx-auto px-5 pb-12 pt-2 flex flex-col justify-between">
-        <div className="bg-surface rounded-3xl border border-border p-6 sm:p-8 space-y-6">
-          <div>
-            <h1 className="font-display font-extrabold text-3xl text-text">Got a room code?</h1>
-            <p className="text-sm text-muted mt-1.5">
-              Ask the host — they&apos;ve got it on their screen.
+      <main className="flex-1 max-w-md w-full mx-auto px-5 pb-12 pt-4 flex flex-col">
+        <div className="bg-surface rounded-2xl border border-border p-6 sm:p-7 space-y-6">
+          <div className="space-y-1">
+            <h1 className="font-display font-extrabold text-2xl sm:text-3xl tracking-tight text-text">
+              Join a round
+            </h1>
+            <p className="text-sm text-muted">
+              Enter the room code from the host&apos;s screen.
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="join-code" className="block text-sm font-bold text-text mb-1.5">
+              <label htmlFor="join-code" className="block text-xs font-bold text-muted mb-1.5">
                 Room code
               </label>
               <input
@@ -92,14 +94,13 @@ export function JoinView({
                 autoComplete="off"
                 value={roomCode}
                 onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
-                placeholder="ABC123"
-                className="w-full h-12 rounded-[14px] border border-border bg-surface-2 px-4 font-mono font-bold text-lg tracking-widest uppercase text-text placeholder:text-faint"
+                placeholder="ABC12"
+                className="w-full h-12 rounded-[14px] border border-border focus:border-accent focus:outline-none bg-surface-2 px-4 font-mono font-bold text-lg tracking-widest uppercase text-text placeholder:text-faint"
               />
-              <p className="text-xs text-faint mt-1.5">5 or 6 characters, no spaces.</p>
             </div>
 
             <div>
-              <label htmlFor="join-name" className="block text-sm font-bold text-text mb-1.5">
+              <label htmlFor="join-name" className="block text-xs font-bold text-muted mb-1.5">
                 Your name
               </label>
               <input
@@ -109,15 +110,12 @@ export function JoinView({
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
                 placeholder="e.g. Sam"
-                className="w-full h-12 rounded-[14px] border border-border bg-surface-2 px-4 text-base font-medium text-text placeholder:text-faint"
+                className="w-full h-12 rounded-[14px] border border-border focus:border-accent focus:outline-none bg-surface-2 px-4 text-base font-medium text-text placeholder:text-faint"
               />
-              <p className="text-xs text-faint mt-1.5">
-                How you&apos;ll show up on the leaderboard.
-              </p>
             </div>
 
             {errorMsg && (
-              <p className="text-sm font-semibold text-danger" role="alert">
+              <p className="text-xs font-semibold text-danger" role="alert">
                 {errorMsg}
               </p>
             )}
@@ -125,7 +123,7 @@ export function JoinView({
             <button
               type="submit"
               disabled={joining}
-              className="btn-primary w-full h-14 sm:h-12 text-sm flex items-center justify-center gap-2 cursor-pointer"
+              className="btn-primary w-full h-12 text-sm flex items-center justify-center gap-2 cursor-pointer mt-2"
             >
               {joining ? 'Setting things up…' : 'Let me in'}
               <ArrowRight className="w-4 h-4" />

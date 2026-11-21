@@ -5,6 +5,7 @@ import {
   ArrowUp,
   Check,
   ClipboardList,
+  Layers,
   Pencil,
   Plus,
   Trash2,
@@ -46,6 +47,8 @@ export function QuestionEditor({
   const [formError, setFormError] = useState<string | null>(null);
   const [startError, setStartError] = useState<string | null>(null);
 
+  const [showPresetsModal, setShowPresetsModal] = useState(false);
+  const [presetTimeSec, setPresetTimeSec] = useState<'default' | number>('default');
   const [showImportModal, setShowImportModal] = useState(false);
   const [importText, setImportText] = useState('');
   const [importErrors, setImportErrors] = useState<string[]>([]);
@@ -186,12 +189,17 @@ export function QuestionEditor({
   };
 
   const handleApplyPreset = (pack: PresetPack, mode: 'replace' | 'append') => {
+    const presetQuestions: QuestionInput[] =
+      presetTimeSec === 'default'
+        ? pack.questions
+        : pack.questions.map((q) => ({ ...q, timeLimitSec: presetTimeSec }));
     const current = toInputs(questions);
-    const next = mode === 'replace' ? pack.questions : [...current, ...pack.questions];
+    const next = mode === 'replace' ? presetQuestions : [...current, ...presetQuestions];
     if (next.length > MAX_QUESTIONS) {
       setStartError(
-        `Adding ${pack.questions.length} would pass the ${MAX_QUESTIONS}-question max. Replace or trim first.`,
+        `Adding ${presetQuestions.length} would pass the ${MAX_QUESTIONS}-question max. Replace or trim first.`,
       );
+      setShowPresetsModal(false);
       return;
     }
     onChange(next);
@@ -203,13 +211,27 @@ export function QuestionEditor({
       onTitleChange(pack.title);
     }
     setPendingPresetId(null);
+    setShowPresetsModal(false);
     setStartError(null);
+  };
+
+  const handleApplyAllTimers = (sec: number) => {
+    if (questions.length === 0) return;
+    onChange(
+      toInputs(questions).map((q) => ({
+        ...q,
+        timeLimitSec: sec,
+      })),
+    );
+    if (editingIndex !== null) {
+      setTimeLimitSec(sec);
+    }
   };
 
   const handleTryOpenLobby = () => {
     if (questions.length < MIN_QUESTIONS) {
       setStartError(
-        `Almost there — you need at least ${MIN_QUESTIONS} questions to start. You've got ${questions.length}.`,
+        `You need at least ${MIN_QUESTIONS} questions to start (currently ${questions.length}).`,
       );
       return;
     }
@@ -217,168 +239,87 @@ export function QuestionEditor({
     onOpenLobby();
   };
 
-  const countHelper = () => {
-    const n = questions.length;
-    if (n === 0) return 'Add at least 10 to start. You have 0.';
-    if (n < MIN_QUESTIONS) return `Add at least 10 to start. You've got ${n}.`;
-    if (n === MIN_QUESTIONS)
-      return "10 questions — that's a proper short round. Add more if you like, up to 50.";
-    if (n < MAX_QUESTIONS) return `${n} questions locked in. Add more or start whenever.`;
-    return "That's the max — 50 questions. Ready when you are.";
-  };
-
   const canStart = questions.length >= MIN_QUESTIONS;
+  const countStatus =
+    questions.length < MIN_QUESTIONS
+      ? `${questions.length} of ${MIN_QUESTIONS} minimum`
+      : `${questions.length} of ${MAX_QUESTIONS} · Ready to host`;
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6 min-w-0">
-      {/* Header & Round Title */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 p-5 sm:p-6 rounded-2xl border border-border bg-surface min-w-0">
-        <div className="space-y-3 flex-1 min-w-0 max-w-xl">
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <h1 className="font-display font-extrabold text-2xl sm:text-3xl tracking-tight text-text">
-              Host setup
-            </h1>
-            <span className="font-mono text-xs font-bold text-muted tabular-nums whitespace-nowrap">
-              Questions · {questions.length} of {MAX_QUESTIONS}
+      {/* Streamlined Setup Bar */}
+      <div className="pb-5 border-b border-border flex flex-col lg:flex-row lg:items-end justify-between gap-4 min-w-0">
+        <div className="space-y-2 flex-1 min-w-0 max-w-lg">
+          <div className="flex items-baseline justify-between gap-3">
+            <label htmlFor="round-title" className="text-xs font-bold text-muted">
+              Round title
+            </label>
+            <span className="font-mono text-xs font-semibold text-muted tabular-nums whitespace-nowrap">
+              {countStatus}
             </span>
           </div>
-          <div>
-            <label htmlFor="round-title" className="block text-xs font-bold text-muted mb-1">
-              Your round
-            </label>
-            <input
-              id="round-title"
-              type="text"
-              maxLength={60}
-              value={roundTitle}
-              onChange={(e) => setRoundTitle(e.target.value)}
-              onBlur={() => onTitleChange(roundTitle)}
-              placeholder="Untitled house round"
-              className="w-full min-w-0 h-11 rounded-[14px] border border-border focus:border-accent bg-surface-2 px-4 text-sm font-semibold text-text placeholder:text-faint focus:outline-none"
-            />
-          </div>
-          <p className="text-xs font-medium text-muted">{countHelper()}</p>
-        </div>
-
-        <div className="flex flex-col items-start md:items-end gap-2">
-          <div className="flex flex-wrap items-center gap-2.5">
-            <button
-              type="button"
-              onClick={() => {
-                setImportErrors([]);
-                setShowImportModal(true);
-              }}
-              className="btn-secondary inline-flex items-center gap-2 px-4 h-12 text-sm whitespace-nowrap shrink-0 cursor-pointer"
-            >
-              <ClipboardList className="w-4 h-4" />
-              Paste a list
-            </button>
-            <button
-              type="button"
-              onClick={handleTryOpenLobby}
-              className={`btn-primary inline-flex items-center gap-2 px-6 h-12 text-sm whitespace-nowrap shrink-0 cursor-pointer ${
-                !canStart ? 'opacity-65' : ''
-              }`}
-            >
-              {canStart ? 'Start round' : 'Start round (needs 10+)'}
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
-          {canStart && !startError && (
-            <p className="text-xs text-muted">
-              Ready when you are. We&apos;ll give you a code to share.
-            </p>
-          )}
+          <input
+            id="round-title"
+            type="text"
+            maxLength={60}
+            value={roundTitle}
+            onChange={(e) => setRoundTitle(e.target.value)}
+            onBlur={() => onTitleChange(roundTitle)}
+            placeholder="Untitled house round"
+            className="w-full min-w-0 h-11 rounded-[14px] border border-border focus:border-accent bg-surface px-4 text-base font-display font-bold text-text placeholder:text-faint focus:outline-none"
+          />
           {startError && (
             <p className="text-xs font-semibold text-danger" role="alert">
               {startError}
             </p>
           )}
         </div>
+
+        <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+          <button
+            type="button"
+            onClick={() => {
+              setPendingPresetId(null);
+              setShowPresetsModal(true);
+            }}
+            className="btn-secondary inline-flex items-center gap-2 px-4 h-11 text-sm whitespace-nowrap shrink-0 cursor-pointer"
+          >
+            <Layers className="w-4 h-4" />
+            Preset rounds
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setImportErrors([]);
+              setShowImportModal(true);
+            }}
+            className="btn-secondary inline-flex items-center gap-2 px-4 h-11 text-sm whitespace-nowrap shrink-0 cursor-pointer"
+          >
+            <ClipboardList className="w-4 h-4" />
+            Paste a list
+          </button>
+          <button
+            type="button"
+            onClick={handleTryOpenLobby}
+            className={`btn-primary inline-flex items-center gap-2 px-5 sm:px-6 h-11 text-sm whitespace-nowrap shrink-0 cursor-pointer ${
+              !canStart ? 'opacity-65' : ''
+            }`}
+          >
+            {canStart ? 'Start round' : 'Start round (needs 10+)'}
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
-      {/* Preset Rounds */}
-      <section className="space-y-3 min-w-0">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="font-display font-bold text-base text-text">Preset rounds</h2>
-          <p className="text-xs text-muted">
-            One tap loads 10 ready-to-play questions. Tweak or add more anytime.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 min-w-0">
-          {PRESET_PACKS.map((pack) => {
-            const isPending = pendingPresetId === pack.id;
-            const canAppend = questions.length + pack.questions.length <= MAX_QUESTIONS;
-            return (
-              <div
-                key={pack.id}
-                className="bg-surface rounded-2xl border border-border p-4 flex flex-col justify-between gap-3 min-w-0"
-              >
-                <div className="space-y-1 min-w-0">
-                  <p className="font-display font-bold text-base text-text truncate">
-                    {pack.title}
-                  </p>
-                  <p className="text-xs text-muted break-words">{pack.subtitle}</p>
-                </div>
-
-                {isPending ? (
-                  <div className="flex flex-wrap items-center gap-2">
-                    {canAppend && (
-                      <button
-                        type="button"
-                        onClick={() => handleApplyPreset(pack, 'append')}
-                        className="btn-secondary px-3 py-1.5 text-xs cursor-pointer whitespace-nowrap"
-                      >
-                        Add +10
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => handleApplyPreset(pack, 'replace')}
-                      className="btn-primary px-3 py-1.5 text-xs cursor-pointer whitespace-nowrap"
-                    >
-                      Replace queue
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setPendingPresetId(null)}
-                      className="btn-ghost px-2.5 py-1.5 text-xs cursor-pointer whitespace-nowrap"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                ) : (
-                  <div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (questions.length === 0) {
-                          handleApplyPreset(pack, 'replace');
-                        } else {
-                          setPendingPresetId(pack.id);
-                        }
-                      }}
-                      className="btn-secondary px-3.5 py-1.5 text-xs cursor-pointer whitespace-nowrap"
-                    >
-                      {questions.length === 0 ? 'Use this round' : 'Load preset'}
-                    </button>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* Left: Add / Edit Question Form */}
+      {/* Main Two-Column Setup Workspace */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+        {/* Left: Single Question Composer */}
         <form
           onSubmit={handleSaveQuestion}
-          className="lg:col-span-6 bg-surface rounded-2xl border border-border p-5 sm:p-6 space-y-5"
+          className="lg:col-span-5 bg-surface rounded-2xl border border-border p-5 space-y-4 min-w-0"
         >
-          <div className="flex items-center justify-between">
-            <h2 className="font-display font-bold text-lg text-text">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="font-display font-bold text-base text-text">
               {editingIndex !== null ? `Edit question #${editingIndex + 1}` : 'Add a question'}
             </h2>
             {(editingIndex !== null || prompt || options.some((o) => o)) && (
@@ -387,38 +328,41 @@ export function QuestionEditor({
                 onClick={resetForm}
                 className="btn-ghost text-xs underline underline-offset-4 px-2 py-1 cursor-pointer"
               >
-                Discard
+                Clear
               </button>
             )}
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-text mb-1.5">Question</label>
+            <label htmlFor="question-prompt" className="sr-only">
+              Question
+            </label>
             <textarea
+              id="question-prompt"
               rows={2}
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              placeholder="e.g. Who left the dishes in the sink for three days?"
-              className="w-full rounded-[14px] border border-border focus:border-accent focus:outline-none px-4 py-3 text-base bg-surface-2 text-text placeholder:text-faint resize-none"
+              placeholder="Write your question…"
+              className="w-full rounded-[14px] border border-border focus:border-accent focus:outline-none px-3.5 py-2.5 text-sm bg-surface-2 text-text placeholder:text-faint resize-none"
             />
           </div>
 
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-sm font-semibold text-text">
-                Options — tap the circle next to the right one
-              </label>
+          <div className="space-y-2 min-w-0">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs font-semibold text-muted">
+                Options — tap letter for correct answer
+              </span>
             </div>
-            <div className="space-y-2.5 min-w-0">
+            <div className="space-y-2 min-w-0">
               {options.map((val, idx) => {
                 const isCorrect = correctIndex === idx;
                 return (
-                  <div key={idx} className="flex items-center gap-2.5 min-w-0">
+                  <div key={idx} className="flex items-center gap-2 min-w-0">
                     <button
                       type="button"
                       onClick={() => setCorrectIndex(idx)}
                       aria-label={`Mark option ${OPTION_LETTERS[idx]} as correct`}
-                      className={`w-10 h-10 rounded-full border-[1.5px] flex items-center justify-center font-display font-bold text-sm shrink-0 transition-colors cursor-pointer ${
+                      className={`w-9 h-9 rounded-full border-[1.5px] flex items-center justify-center font-display font-bold text-xs shrink-0 transition-colors cursor-pointer ${
                         isCorrect
                           ? 'bg-success-soft border-success text-success'
                           : 'bg-surface border-border text-muted hover:border-accent hover:text-accent'
@@ -435,7 +379,7 @@ export function QuestionEditor({
                         setOptions(next);
                       }}
                       placeholder={`Option ${OPTION_LETTERS[idx]}`}
-                      className="flex-1 min-w-0 w-full h-11 rounded-[14px] border border-border focus:border-accent focus:outline-none px-4 text-sm bg-surface-2 text-text placeholder:text-faint"
+                      className="flex-1 min-w-0 w-full h-10 rounded-[12px] border border-border focus:border-accent focus:outline-none px-3.5 text-sm bg-surface-2 text-text placeholder:text-faint"
                     />
                   </div>
                 );
@@ -446,7 +390,7 @@ export function QuestionEditor({
               <button
                 type="button"
                 onClick={handleAddOptionField}
-                className="btn-ghost mt-2.5 inline-flex items-center gap-1 text-xs px-2 py-1 cursor-pointer"
+                className="btn-ghost inline-flex items-center gap-1 text-xs px-1.5 py-1 cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" />
                 Add option
@@ -454,17 +398,233 @@ export function QuestionEditor({
             )}
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-4 pt-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-sm font-semibold text-text">Time per question</span>
-              <div className="flex items-center gap-1 p-1 rounded-[14px] bg-surface-2 border border-border">
-                {[5, 10, 20, 30].map((sec) => (
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-border/70">
+            <div className="flex items-center gap-1 p-1 rounded-[12px] bg-surface-2 border border-border">
+              {[5, 10, 15, 20, 30].map((sec) => (
+                <button
+                  key={sec}
+                  type="button"
+                  onClick={() => setTimeLimitSec(sec)}
+                  className={`px-2 py-1 rounded-[8px] text-xs font-mono font-bold tabular-nums transition-colors cursor-pointer ${
+                    timeLimitSec === sec
+                      ? 'bg-accent text-on-accent'
+                      : 'text-muted hover:text-text'
+                  }`}
+                >
+                  {sec}s
+                </button>
+              ))}
+            </div>
+
+            <button
+              type="submit"
+              className="btn-primary inline-flex items-center gap-1.5 px-4 h-10 text-sm cursor-pointer whitespace-nowrap shrink-0"
+            >
+              <Plus className="w-4 h-4" />
+              {editingIndex !== null ? 'Save edit' : 'Add question'}
+            </button>
+          </div>
+
+          {formError && (
+            <p className="text-xs font-semibold text-danger" role="alert">
+              {formError}
+            </p>
+          )}
+        </form>
+
+        {/* Right: Clean Question Queue */}
+        <div className="lg:col-span-7 space-y-2.5 min-w-0">
+          <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+            <div className="flex items-baseline gap-2.5">
+              <h2 className="font-display font-bold text-base text-text">Question queue</h2>
+              <span className="text-xs font-mono text-muted tabular-nums">
+                {questions.length} / {MAX_QUESTIONS}
+              </span>
+            </div>
+
+            {questions.length > 0 && (() => {
+              const firstTimer = questions[0]?.timeLimitSec;
+              const allSameTimer =
+                firstTimer !== undefined && questions.every((q) => q.timeLimitSec === firstTimer);
+              return (
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-xs font-semibold text-muted whitespace-nowrap">
+                    All timers
+                  </span>
+                  <div className="flex items-center gap-0.5 p-0.5 rounded-[10px] bg-surface-2 border border-border">
+                    {[5, 10, 15, 20, 30].map((sec) => (
+                      <button
+                        key={sec}
+                        type="button"
+                        onClick={() => handleApplyAllTimers(sec)}
+                        className={`px-2 py-1 rounded-[7px] text-[11px] font-mono font-bold tabular-nums transition-colors cursor-pointer whitespace-nowrap ${
+                          allSameTimer && firstTimer === sec
+                            ? 'bg-accent text-on-accent'
+                            : 'text-muted hover:text-text'
+                        }`}
+                      >
+                        {sec}s
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+
+          {questions.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-border bg-surface px-6 py-12 text-center space-y-3">
+              <p className="font-display font-bold text-base text-text">No questions yet</p>
+              <p className="text-sm text-muted max-w-sm mx-auto">
+                Add questions on the left, paste a list, or load a ready-made preset round.
+              </p>
+              <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setShowPresetsModal(true)}
+                  className="btn-secondary px-4 py-2 text-xs cursor-pointer"
+                >
+                  Browse preset rounds
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setImportErrors([]);
+                    setShowImportModal(true);
+                  }}
+                  className="btn-ghost px-3 py-2 text-xs cursor-pointer"
+                >
+                  Paste a list
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-surface rounded-2xl border border-border overflow-hidden divide-y divide-border">
+              {questions.map((q, idx) => {
+                const isEditing = editingIndex === idx;
+                return (
+                  <div
+                    key={q.id}
+                    className={`px-4 py-3 flex items-start justify-between gap-3 min-w-0 transition-colors ${
+                      isEditing ? 'bg-accent-soft/45' : 'hover:bg-surface-2/40'
+                    }`}
+                  >
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <div className="flex items-baseline gap-2 min-w-0">
+                        <span className="font-mono text-xs font-bold text-faint tabular-nums shrink-0">
+                          {idx + 1}.
+                        </span>
+                        <p className="font-display font-semibold text-sm text-text leading-snug break-words">
+                          {q.prompt}
+                        </p>
+                      </div>
+                      <p className="pl-5 text-xs text-muted truncate">
+                        <span className="font-mono tabular-nums">{q.timeLimitSec}s</span>
+                        {' · '}
+                        <span className="font-semibold text-success">
+                          {OPTION_LETTERS[q.correctIndex]}. {q.options[q.correctIndex]}
+                        </span>
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-0.5 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleMove(idx, -1)}
+                        disabled={idx === 0}
+                        aria-label="Move question up"
+                        className="w-7 h-7 rounded-lg flex items-center justify-center text-muted hover:bg-surface-2 hover:text-text disabled:opacity-25 cursor-pointer"
+                      >
+                        <ArrowUp className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleMove(idx, 1)}
+                        disabled={idx === questions.length - 1}
+                        aria-label="Move question down"
+                        className="w-7 h-7 rounded-lg flex items-center justify-center text-muted hover:bg-surface-2 hover:text-text disabled:opacity-25 cursor-pointer"
+                      >
+                        <ArrowDown className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleEditClick(idx)}
+                        aria-label="Edit question"
+                        className="w-7 h-7 rounded-lg flex items-center justify-center text-muted hover:bg-surface-2 hover:text-accent cursor-pointer"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(idx)}
+                        aria-label="Delete question"
+                        className="w-7 h-7 rounded-lg flex items-center justify-center text-muted hover:bg-danger-soft hover:text-danger cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Preset Rounds Modal */}
+      {showPresetsModal && (
+        <div
+          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Preset rounds"
+        >
+          <div className="bg-surface rounded-3xl border border-border w-full max-w-xl max-h-[90vh] overflow-y-auto p-5 sm:p-6 space-y-4 min-w-0">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <h2 className="font-display font-extrabold text-xl text-text">Preset rounds</h2>
+                <p className="text-xs text-muted mt-0.5">
+                  One tap loads 10 ready-to-play questions. Tweak or add more anytime.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPresetsModal(false)}
+                aria-label="Close preset rounds"
+                className="btn-secondary w-9 h-9 flex items-center justify-center shrink-0 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 rounded-2xl bg-surface-2/65 border border-border px-3.5 py-2.5">
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-text">Timer for preset</p>
+                <p className="text-[11px] text-muted">
+                  {presetTimeSec === 'default'
+                    ? 'Uses each pack’s built-in pace (5s–20s).'
+                    : `Sets all 10 questions to ${presetTimeSec}s.`}
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-1 p-1 rounded-[12px] bg-surface border border-border self-start sm:self-center shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setPresetTimeSec('default')}
+                  className={`px-2.5 py-1 rounded-[8px] text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap ${
+                    presetTimeSec === 'default'
+                      ? 'bg-accent text-on-accent'
+                      : 'text-muted hover:text-text'
+                  }`}
+                >
+                  Pack pace
+                </button>
+                {[5, 10, 15, 20, 30].map((sec) => (
                   <button
                     key={sec}
                     type="button"
-                    onClick={() => setTimeLimitSec(sec)}
-                    className={`px-2.5 sm:px-3 py-1 rounded-[10px] text-xs font-mono font-bold tabular-nums transition-colors cursor-pointer ${
-                      timeLimitSec === sec
+                    onClick={() => setPresetTimeSec(sec)}
+                    className={`px-2 py-1 rounded-[8px] text-xs font-mono font-bold tabular-nums transition-colors cursor-pointer whitespace-nowrap ${
+                      presetTimeSec === sec
                         ? 'bg-accent text-on-accent'
                         : 'text-muted hover:text-text'
                     }`}
@@ -475,104 +635,70 @@ export function QuestionEditor({
               </div>
             </div>
 
-            <button
-              type="submit"
-              className="btn-primary inline-flex items-center gap-2 px-5 h-11 text-sm cursor-pointer whitespace-nowrap shrink-0"
-            >
-              <Plus className="w-4 h-4" />
-              {editingIndex !== null ? 'Update question' : 'Add question'}
-            </button>
-          </div>
-
-          {formError && (
-            <p className="text-sm font-medium text-danger" role="alert">
-              {formError}
-            </p>
-          )}
-        </form>
-
-        {/* Right: Question Queue */}
-        <div className="lg:col-span-6 space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="font-display font-bold text-lg text-text">Question queue</h2>
-            <span className="text-xs font-mono text-muted tabular-nums">
-              {questions.length} of {MAX_QUESTIONS}
-            </span>
-          </div>
-
-          {questions.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-border bg-surface p-10 text-center space-y-2">
-              <p className="font-display font-bold text-base text-text">No questions yet</p>
-              <p className="text-sm text-muted">Add one on the left or paste a list in one go.</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {questions.map((q, idx) => (
-                <div
-                  key={q.id}
-                  className="bg-surface rounded-2xl border border-border hover:border-accent transition-colors p-4 flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4 min-w-0"
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="text-xs font-mono text-muted tabular-nums mb-1">
-                      Q{idx + 1} · {q.timeLimitSec}s · Answer: {OPTION_LETTERS[q.correctIndex]}
+            <div className="divide-y divide-border rounded-2xl border border-border overflow-hidden">
+              {PRESET_PACKS.map((pack) => {
+                const isPending = pendingPresetId === pack.id;
+                const canAppend = questions.length + pack.questions.length <= MAX_QUESTIONS;
+                return (
+                  <div
+                    key={pack.id}
+                    className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-surface min-w-0"
+                  >
+                    <div className="space-y-0.5 min-w-0">
+                      <p className="font-display font-bold text-base text-text truncate">
+                        {pack.title}
+                      </p>
+                      <p className="text-xs text-muted break-words">{pack.subtitle}</p>
                     </div>
-                    <p className="font-display font-bold text-base text-text leading-snug break-words">
-                      {q.prompt}
-                    </p>
-                    <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
-                      {q.options.map((opt, oIdx) => (
-                        <span
-                          key={oIdx}
-                          className={`break-words ${oIdx === q.correctIndex ? 'font-bold text-success' : ''}`}
+
+                    {isPending ? (
+                      <div className="flex flex-wrap items-center gap-2 shrink-0">
+                        {canAppend && (
+                          <button
+                            type="button"
+                            onClick={() => handleApplyPreset(pack, 'append')}
+                            className="btn-secondary px-3 py-1.5 text-xs cursor-pointer whitespace-nowrap"
+                          >
+                            Add +10
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleApplyPreset(pack, 'replace')}
+                          className="btn-primary px-3 py-1.5 text-xs cursor-pointer whitespace-nowrap"
                         >
-                          {OPTION_LETTERS[oIdx]}. {opt}
-                        </span>
-                      ))}
-                    </div>
+                          Replace queue
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPendingPresetId(null)}
+                          className="btn-ghost px-2.5 py-1.5 text-xs cursor-pointer whitespace-nowrap"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (questions.length === 0) {
+                            handleApplyPreset(pack, 'replace');
+                          } else {
+                            setPendingPresetId(pack.id);
+                          }
+                        }}
+                        className="btn-secondary px-3.5 py-1.5 text-xs cursor-pointer whitespace-nowrap shrink-0 self-start sm:self-center"
+                      >
+                        {questions.length === 0 ? 'Use this round' : 'Load preset'}
+                      </button>
+                    )}
                   </div>
-
-                  <div className="flex items-center justify-end gap-1 shrink-0 pt-1 sm:pt-0 border-t sm:border-t-0 border-border/60">
-                    <button
-                      type="button"
-                      onClick={() => handleMove(idx, -1)}
-                      disabled={idx === 0}
-                      aria-label="Move question up"
-                      className="w-8 h-8 rounded-lg flex items-center justify-center text-muted hover:bg-surface-2 hover:text-text disabled:opacity-25 cursor-pointer"
-                    >
-                      <ArrowUp className="w-4 h-4" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleMove(idx, 1)}
-                      disabled={idx === questions.length - 1}
-                      aria-label="Move question down"
-                      className="w-8 h-8 rounded-lg flex items-center justify-center text-muted hover:bg-surface-2 hover:text-text disabled:opacity-25 cursor-pointer"
-                    >
-                      <ArrowDown className="w-4 h-4" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleEditClick(idx)}
-                      aria-label="Edit question"
-                      className="w-8 h-8 rounded-lg flex items-center justify-center text-muted hover:bg-surface-2 hover:text-accent cursor-pointer"
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(idx)}
-                      aria-label="Delete question"
-                      className="w-8 h-8 rounded-lg flex items-center justify-center text-danger hover:bg-danger-soft cursor-pointer"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
-          )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Paste a list modal */}
       {showImportModal && (

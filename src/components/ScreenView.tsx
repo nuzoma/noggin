@@ -4,6 +4,7 @@ import type { RoomStatus, ScreenRoomView, WSServerMessage } from '../shared/type
 import { playFanfare, playReveal } from '../lib/sound';
 import { useCountdown } from '../lib/useCountdown';
 import { useRoomSocket } from '../lib/useRoomSocket';
+import { ConfettiBurst } from './ConfettiBurst';
 import {
   CountdownTimer,
   MascotIllustration,
@@ -273,6 +274,10 @@ export function ScreenView({ code, onExitHome }: ScreenViewProps) {
       {/* REVEAL (.state-reveal) */}
       {view.status === 'reveal' && view.currentQuestion && (
         <main className="flex-1 flex flex-col">
+          <ConfettiBurst
+            triggerKey={`screen-reveal-${view.roundNumber}-${view.currentQuestionIndex}`}
+            count={92}
+          />
           <section className="border-b border-border bg-surface pt-8 pb-6 px-6">
             <div className="max-w-5xl mx-auto space-y-3">
               <SegmentedProgress

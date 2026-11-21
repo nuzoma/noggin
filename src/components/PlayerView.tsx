@@ -6,6 +6,7 @@ import { clearPlayerSession, getPlayerSession, savePlayerSession } from '../lib/
 import { playFanfare, playLockIn, playReveal } from '../lib/sound';
 import { useCountdown } from '../lib/useCountdown';
 import { useRoomSocket } from '../lib/useRoomSocket';
+import { ConfettiBurst } from './ConfettiBurst';
 import { LobbyCanvas } from './LobbyCanvas';
 import {
   CountdownTimer,
@@ -438,6 +439,11 @@ export function PlayerView({ code, onExitHome }: PlayerViewProps) {
       {/* REVEAL (.state-reveal, green payoff) */}
       {view.status === 'reveal' && view.currentQuestion && (
         <>
+          <ConfettiBurst
+            triggerKey={`player-reveal-${view.roundNumber}-${view.currentQuestionIndex}`}
+            active={view.myAnswer?.isCorrect === true}
+            count={64}
+          />
           <header className="border-b border-border bg-surface pt-5 pb-4 px-4 sm:px-5">
             <div className="max-w-lg mx-auto text-center space-y-1.5">
               <p className="font-mono text-xs font-bold text-accent tabular-nums">

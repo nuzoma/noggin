@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Check,
+  ChevronDown,
+  ChevronUp,
   Copy,
   Link2,
   Play,
@@ -22,6 +24,7 @@ import { clearHostSession, saveHostSession } from '../lib/storage';
 import { isSoundMuted, playFanfare, playReveal, playTap, setSoundMuted } from '../lib/sound';
 import { useCountdown } from '../lib/useCountdown';
 import { useRoomSocket } from '../lib/useRoomSocket';
+import { ConfettiBurst } from './ConfettiBurst';
 import { LobbyCanvas } from './LobbyCanvas';
 import { QuestionEditor } from './QuestionEditor';
 import {
@@ -68,6 +71,7 @@ export function HostView({ hostToken, onExitHome, onNewGame }: HostViewProps) {
   const [copiedLink, setCopiedLink] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [confirmKickId, setConfirmKickId] = useState<string | null>(null);
+  const [showPlayerList, setShowPlayerList] = useState(false);
   const [muted, setMuted] = useState(() => isSoundMuted());
   const [houseRecord, setHouseRecord] = useState<HouseRecordEntry[]>(() => getHouseRecord());
   const [newlyAddedWinners, setNewlyAddedWinners] = useState<string[]>([]);
@@ -127,6 +131,7 @@ export function HostView({ hostToken, onExitHome, onNewGame }: HostViewProps) {
   useEffect(() => {
     setConfirmKickId(null);
     setConfirmCancel(false);
+    setShowPlayerList(false);
     if (room?.status !== 'finished') {
       setNewlyAddedWinners([]);
     }
@@ -328,8 +333,8 @@ export function HostView({ hostToken, onExitHome, onNewGame }: HostViewProps) {
       {/* STATE 2: LOBBY (.state-lobby, cool blue, no gradient) */}
       {room.status === 'lobby' && (
         <main className="flex-1 flex flex-col min-w-0">
-          <section className="border-b border-border bg-surface py-6 sm:py-8 px-4 sm:px-6">
-            <div className="max-w-5xl mx-auto text-center space-y-5 min-w-0">
+          <section className="border-b border-border bg-surface py-4 sm:py-6 px-4 sm:px-6">
+            <div className="max-w-5xl mx-auto text-center space-y-3.5 min-w-0">
               <div className="space-y-1 min-w-0">
                 <p className="text-xs font-bold tracking-wide text-muted">Room code</p>
                 <p className="text-sm font-medium text-muted break-words">
@@ -338,12 +343,12 @@ export function HostView({ hostToken, onExitHome, onNewGame }: HostViewProps) {
                 </p>
               </div>
 
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-5 max-w-full">
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5 sm:gap-5 max-w-full">
                 <button
                   type="button"
                   onClick={copyCode}
                   title="Tap to copy room code"
-                  className="room-code text-4xl sm:text-[56px] px-5 sm:px-8 py-4 sm:py-6 leading-none tabular-nums select-all cursor-pointer hover:border-accent transition-colors"
+                  className="room-code text-4xl sm:text-[52px] px-5 sm:px-8 py-3.5 sm:py-5 leading-none tabular-nums select-all cursor-pointer hover:border-accent transition-colors"
                 >
                   {room.code}
                 </button>
@@ -367,16 +372,16 @@ export function HostView({ hostToken, onExitHome, onNewGame }: HostViewProps) {
                 </div>
               </div>
 
-              <p className="text-sm font-medium text-muted tabular-nums break-words">
-                {room.title} · {totalQuestions} questions · {lobbyCountMessage}
+              <p className="text-xs sm:text-sm font-medium text-muted tabular-nums break-words">
+                {room.title} · {totalQuestions} questions
               </p>
             </div>
           </section>
 
-          <div className="max-w-5xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 flex-1 flex flex-col justify-between gap-6 min-w-0">
-            <div className="space-y-5 min-w-0">
+          <div className="max-w-5xl w-full mx-auto px-4 sm:px-6 py-5 sm:py-6 flex-1 flex flex-col gap-5 min-w-0">
+            <div className="space-y-3 min-w-0">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <h2 className="font-display font-extrabold text-xl text-text flex items-center gap-2">
+                <h2 className="font-display font-extrabold text-lg sm:text-xl text-text flex items-center gap-2">
                   <Users className="w-5 h-5 text-accent shrink-0" />
                   <span>Players · {totalPlayers}</span>
                 </h2>
@@ -387,62 +392,20 @@ export function HostView({ hostToken, onExitHome, onNewGame }: HostViewProps) {
                 players={room.players}
                 canKick
                 onKickPlayer={(playerId) => send({ type: 'host:kick_player', playerId })}
-                heightClassName="h-[270px] sm:h-[360px]"
+                heightClassName={
+                  totalPlayers > 30 ? 'h-[260px] sm:h-[360px]' : 'h-[220px] sm:h-[300px]'
+                }
                 subtitle={`Pass around ${room.code} or tap Copy join link above. Avatars float in as housemates join.`}
               />
-
-              {totalPlayers > 0 && (
-                <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                  {room.players.map((p) => {
-                    const isConfirming = confirmKickId === p.id;
-                    return (
-                      <div
-                        key={p.id}
-                        className="bg-surface rounded-2xl border border-border px-4 py-3 flex items-center justify-between gap-2 min-w-0"
-                      >
-                        <div className="min-w-0">
-                          <p className="font-display font-bold text-base text-text truncate">
-                            {p.name}
-                          </p>
-                          <p className="text-xs text-muted">
-                            {p.connected ? 'In room' : 'Reconnecting'}
-                          </p>
-                        </div>
-                        {isConfirming ? (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              send({ type: 'host:kick_player', playerId: p.id });
-                              setConfirmKickId(null);
-                            }}
-                            className="px-2.5 py-1 rounded-lg bg-danger text-white text-[11px] font-bold shrink-0 cursor-pointer"
-                          >
-                            Remove
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => setConfirmKickId(p.id)}
-                            aria-label={`Remove ${p.name}`}
-                            className="w-8 h-8 rounded-lg flex items-center justify-center text-muted hover:bg-danger-soft hover:text-danger shrink-0 cursor-pointer"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
             </div>
 
-            {/* Lobby Footer Controls */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-4 border-t border-border">
-              <div className="flex flex-wrap items-center gap-2.5">
+            {/* Lobby Controls — always right below canvas so Start round never sits behind a long list */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 pt-4 border-t border-border">
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
                   onClick={() => send({ type: 'host:edit_questions' })}
-                  className="btn-secondary px-5 h-11 sm:h-12 text-sm cursor-pointer whitespace-nowrap"
+                  className="btn-secondary px-4 h-11 text-sm cursor-pointer whitespace-nowrap"
                 >
                   Edit questions
                 </button>
@@ -450,7 +413,7 @@ export function HostView({ hostToken, onExitHome, onNewGame }: HostViewProps) {
                   <button
                     type="button"
                     onClick={() => send({ type: 'host:cancel_room' })}
-                    className="px-5 h-11 sm:h-12 rounded-[14px] bg-danger text-white text-sm font-bold cursor-pointer whitespace-nowrap"
+                    className="px-4 h-11 rounded-[14px] bg-danger text-white text-sm font-bold cursor-pointer whitespace-nowrap"
                   >
                     Confirm close room
                   </button>
@@ -458,7 +421,7 @@ export function HostView({ hostToken, onExitHome, onNewGame }: HostViewProps) {
                   <button
                     type="button"
                     onClick={() => setConfirmCancel(true)}
-                    className="btn-ghost px-4 h-11 sm:h-12 text-sm cursor-pointer whitespace-nowrap"
+                    className="btn-ghost px-3.5 h-11 text-sm cursor-pointer whitespace-nowrap"
                   >
                     Close room
                   </button>
@@ -483,6 +446,73 @@ export function HostView({ hostToken, onExitHome, onNewGame }: HostViewProps) {
                 )}
               </div>
             </div>
+
+            {/* Optional Compact Collapsible Player List */}
+            {totalPlayers > 0 && (
+              <div className="bg-surface rounded-2xl border border-border overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setShowPlayerList((prev) => !prev)}
+                  className="w-full px-3.5 py-2.5 flex items-center justify-between gap-2 text-xs font-semibold text-muted hover:text-text hover:bg-surface-2/40 transition-colors cursor-pointer"
+                >
+                  <span className="tabular-nums">
+                    {showPlayerList ? 'Hide player list' : `Show player list (${totalPlayers})`}
+                  </span>
+                  {showPlayerList ? (
+                    <ChevronUp className="w-4 h-4 shrink-0" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4 shrink-0" />
+                  )}
+                </button>
+
+                {showPlayerList && (
+                  <ul className="max-h-40 overflow-y-auto divide-y divide-border border-t border-border">
+                    {room.players.map((p, idx) => {
+                      const isConfirming = confirmKickId === p.id;
+                      return (
+                        <li
+                          key={p.id}
+                          className="px-3.5 py-1.5 flex items-center justify-between gap-3 min-w-0 text-xs hover:bg-surface-2/40 transition-colors"
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="font-mono text-[11px] text-faint tabular-nums w-6 shrink-0">
+                              {idx + 1}.
+                            </span>
+                            <span className="font-semibold text-text truncate">{p.name}</span>
+                            {!p.connected && (
+                              <span className="text-[11px] text-warning font-medium shrink-0">
+                                · Reconnecting
+                              </span>
+                            )}
+                          </div>
+                          {isConfirming ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                send({ type: 'host:kick_player', playerId: p.id });
+                                setConfirmKickId(null);
+                              }}
+                              className="px-2 py-0.5 rounded-md bg-danger text-white text-[11px] font-bold shrink-0 cursor-pointer"
+                            >
+                              Confirm remove
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => setConfirmKickId(p.id)}
+                              aria-label={`Remove ${p.name}`}
+                              className="w-6 h-6 rounded-md flex items-center justify-center text-muted hover:bg-danger-soft hover:text-danger shrink-0 cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+            )}
           </div>
         </main>
       )}
@@ -586,6 +616,7 @@ export function HostView({ hostToken, onExitHome, onNewGame }: HostViewProps) {
       {/* STATE 4: REVEAL (.state-reveal, bright green payoff, no gradient) */}
       {room.status === 'reveal' && currentQuestion && (
         <main className="flex-1 flex flex-col min-w-0">
+          <ConfettiBurst triggerKey={`host-reveal-${room.roundNumber}-${room.currentQuestionIndex}`} />
           <section className="border-b border-border bg-surface pt-6 pb-6 px-4 sm:px-6">
             <div className="max-w-5xl mx-auto space-y-3 min-w-0">
               <SegmentedProgress total={totalQuestions} currentIndex={room.currentQuestionIndex} />

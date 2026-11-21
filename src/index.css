@@ -1,95 +1,95 @@
 @import "tailwindcss";
 
 :root {
-  /* Neutrals — light mode */
-  --bg:            #FAF8F5;
+  /* Neutrals — warm gallery paper & sunlit ivory (light mode) */
+  --bg:            #F7F5F0;
   --surface:       #FFFFFF;
-  --surface-2:     #F3EFEA;
-  --border:        #E7E1D8;
-  --text:          #1F1B16;
-  --text-muted:    #6B6259;
-  --text-faint:    #9A9088;
-  --cast-text:     #000000;
+  --surface-2:     #EFECE4;
+  --border:        #E4DFD4;
+  --text:          #1B1E1D;
+  --text-muted:    #626662;
+  --text-faint:    #93968F;
+  --cast-text:     #121413;
 
-  /* Accent — default identity (Home / Join) */
-  --accent:        #E45D3B;
-  --accent-hover:  #CE4F30;
-  --accent-soft:   #FBE7E0;
+  /* Accent — refined persimmon coral (warm, playful, matured) */
+  --accent:        #D95F43;
+  --accent-hover:  #C24E33;
+  --accent-soft:   #FCEAE5;
   --btn-primary-text: #FFFFFF;
 
   /* Semantic */
-  --success:       #1F9D6B;
-  --success-soft:  #E3F6ED;
-  --danger:        #D64040;
+  --success:       #277D5B;
+  --success-soft:  #E1F1E9;
+  --danger:        #C64545;
   --danger-soft:   #FBE6E6;
-  --warning:       #C98A00;
-  --warning-soft:  #FBF1D6;
+  --warning:       #C48418;
+  --warning-soft:  #FBF0D6;
 
   /* Medals */
-  --medal-gold-fg:   #C98A00;
-  --medal-gold-bg:   #FBF1D6;
-  --medal-silver-fg: #6B6259;
-  --medal-silver-bg: #F3EFEA;
-  --medal-bronze-fg: #8C5A3B;
-  --medal-bronze-bg: #F5E6DA;
+  --medal-gold-fg:   #A66E0E;
+  --medal-gold-bg:   #FBF0D6;
+  --medal-silver-fg: #626662;
+  --medal-silver-bg: #EFECE4;
+  --medal-bronze-fg: #8B5338;
+  --medal-bronze-bg: #F3E4D9;
 
   /* Per-state accents */
-  --state-lobby:        #3B7BE4;
-  --state-lobby-hover:  #2E63BE;
-  --state-lobby-soft:   #E8F0FD;
-  --state-question:     #E45D3B;
-  --state-question-hover: #CE4F30;
-  --state-question-soft:  #FBE7E0;
-  --state-reveal:       #1F9D6B;
-  --state-reveal-hover: #178A5C;
-  --state-reveal-soft:  #E3F6ED;
-  --state-podium:       #C98A00;
-  --state-podium-hover: #A87300;
-  --state-podium-soft:  #FBF1D6;
+  --state-lobby:        #2E6F78;
+  --state-lobby-hover:  #235960;
+  --state-lobby-soft:   #E3F0F2;
+  --state-question:     #D95F43;
+  --state-question-hover: #C24E33;
+  --state-question-soft:  #FCEAE5;
+  --state-reveal:       #277D5B;
+  --state-reveal-hover: #1E6348;
+  --state-reveal-soft:  #E1F1E9;
+  --state-podium:       #C48418;
+  --state-podium-hover: #A36C0E;
+  --state-podium-soft:  #FBF0D6;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg:            #16130F;
-    --surface:       #211D18;
-    --surface-2:     #2A251F;
-    --border:        #3A342C;
-    --text:          #F6F1EA;
-    --text-muted:    #BDB3A8;
-    --text-faint:    #8A8078;
-    --cast-text:     #FFFFFF;
+    --bg:            #141618;
+    --surface:       #1C1F22;
+    --surface-2:     #25292D;
+    --border:        #32373C;
+    --text:          #F2F0EB;
+    --text-muted:    #A9ADB2;
+    --text-faint:    #787D82;
+    --cast-text:     #F8F7F4;
 
-    --accent:        #FF7A55;
-    --accent-hover:  #FF9478;
-    --accent-soft:   #3A1F16;
-    --btn-primary-text: #16130F;
+    --accent:        #E87D61;
+    --accent-hover:  #F2947B;
+    --accent-soft:   #33201B;
+    --btn-primary-text: #141618;
 
-    --success:       #34C48A;
-    --success-soft:  #133227;
-    --danger:        #FF6B6B;
-    --danger-soft:   #3A1919;
-    --warning:       #F0B429;
-    --warning-soft:  #332810;
+    --success:       #4CB086;
+    --success-soft:  #162E24;
+    --danger:        #E36868;
+    --danger-soft:   #381D1D;
+    --warning:       #E3A73B;
+    --warning-soft:  #2E2413;
 
-    --medal-gold-fg:   #F0B429;
-    --medal-gold-bg:   #332810;
-    --medal-silver-fg: #BDB3A8;
-    --medal-silver-bg: #2A251F;
-    --medal-bronze-fg: #D99B72;
-    --medal-bronze-bg: #332218;
+    --medal-gold-fg:   #E3A73B;
+    --medal-gold-bg:   #2E2413;
+    --medal-silver-fg: #A9ADB2;
+    --medal-silver-bg: #25292D;
+    --medal-bronze-fg: #D4956E;
+    --medal-bronze-bg: #2F2119;
 
-    --state-lobby:        #639BF5;
-    --state-lobby-hover:  #82B0FA;
-    --state-lobby-soft:   #172742;
-    --state-question:     #FF7A55;
-    --state-question-hover: #FF9478;
-    --state-question-soft:  #3A1F16;
-    --state-reveal:       #34C48A;
-    --state-reveal-hover: #52D49F;
-    --state-reveal-soft:  #133227;
-    --state-podium:       #F0B429;
-    --state-podium-hover: #F5C656;
-    --state-podium-soft:  #332810;
+    --state-lobby:        #5FA8B3;
+    --state-lobby-hover:  #79BCC6;
+    --state-lobby-soft:   #182B2E;
+    --state-question:     #E87D61;
+    --state-question-hover: #F2947B;
+    --state-question-soft:  #33201B;
+    --state-reveal:       #4CB086;
+    --state-reveal-hover: #67C59E;
+    --state-reveal-soft:  #162E24;
+    --state-podium:       #E3A73B;
+    --state-podium-hover: #F0BC5E;
+    --state-podium-soft:  #2E2413;
   }
 }
 
@@ -112,7 +112,7 @@
   --accent: var(--state-podium);
   --accent-hover: var(--state-podium-hover);
   --accent-soft: var(--state-podium-soft);
-  --btn-primary-text: #1F1B16;
+  --btn-primary-text: #141618;
 }
 
 @theme {
@@ -147,6 +147,7 @@
     color: var(--text);
     overflow-x: clip;
     max-width: 100%;
+    -webkit-font-smoothing: antialiased;
   }
 
   h1, h2, h3, h4, .font-display {
@@ -162,40 +163,40 @@
 /* The three signature gradients (and only these three) */
 .bg-hero {
   background:
-    radial-gradient(1200px 600px at 10% -10%, #FBE7E0 0%, transparent 60%),
-    radial-gradient(900px 500px at 110% 10%, #FDF3E8 0%, transparent 55%),
+    radial-gradient(1000px 520px at 8% -12%, rgba(217, 95, 67, 0.09) 0%, transparent 60%),
+    radial-gradient(850px 460px at 96% 10%, rgba(46, 111, 120, 0.09) 0%, transparent 55%),
     var(--bg);
 }
 
 .bg-question {
   background:
-    radial-gradient(700px 400px at 50% -20%, rgba(228, 93, 59, 0.10) 0%, transparent 60%),
+    radial-gradient(700px 400px at 50% -20%, rgba(217, 95, 67, 0.09) 0%, transparent 60%),
     var(--bg);
 }
 
 .bg-podium {
   background:
-    radial-gradient(800px 500px at 50% -10%, rgba(201, 138, 0, 0.18) 0%, transparent 65%),
-    radial-gradient(600px 400px at 10% 100%, rgba(228, 93, 59, 0.10) 0%, transparent 60%),
+    radial-gradient(800px 500px at 50% -10%, rgba(196, 132, 24, 0.14) 0%, transparent 65%),
+    radial-gradient(600px 400px at 10% 100%, rgba(217, 95, 67, 0.07) 0%, transparent 60%),
     var(--bg);
 }
 
 @media (prefers-color-scheme: dark) {
   .bg-hero {
     background:
-      radial-gradient(1200px 600px at 10% -10%, rgba(255, 122, 85, 0.10) 0%, transparent 60%),
-      radial-gradient(900px 500px at 110% 10%, rgba(201, 138, 0, 0.08) 0%, transparent 55%),
+      radial-gradient(1000px 520px at 8% -12%, rgba(232, 125, 97, 0.10) 0%, transparent 60%),
+      radial-gradient(850px 460px at 96% 10%, rgba(95, 168, 179, 0.10) 0%, transparent 55%),
       var(--bg);
   }
   .bg-question {
     background:
-      radial-gradient(700px 400px at 50% -20%, rgba(255, 122, 85, 0.12) 0%, transparent 60%),
+      radial-gradient(700px 400px at 50% -20%, rgba(232, 125, 97, 0.10) 0%, transparent 60%),
       var(--bg);
   }
   .bg-podium {
     background:
-      radial-gradient(800px 500px at 50% -10%, rgba(201, 138, 0, 0.14) 0%, transparent 65%),
-      radial-gradient(600px 400px at 10% 100%, rgba(255, 122, 85, 0.10) 0%, transparent 60%),
+      radial-gradient(800px 500px at 50% -10%, rgba(227, 167, 59, 0.12) 0%, transparent 65%),
+      radial-gradient(600px 400px at 10% 100%, rgba(232, 125, 97, 0.08) 0%, transparent 60%),
       var(--bg);
   }
 }
@@ -212,7 +213,7 @@
   color: var(--btn-primary-text);
   border-radius: 14px;
   font-weight: 600;
-  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
   transition: background 120ms ease, transform 120ms ease;
 }
 .btn-primary:hover:not(:disabled) {
@@ -231,7 +232,7 @@
   color: var(--text);
   border-radius: 14px;
   font-weight: 600;
-  transition: border-color 120ms ease, color 120ms ease;
+  transition: border-color 120ms ease, color 120ms ease, background 120ms ease;
 }
 .btn-secondary:hover:not(:disabled) {
   border-color: var(--accent);
@@ -247,7 +248,7 @@
   color: var(--text-muted);
   border-radius: 14px;
   font-weight: 600;
-  transition: color 120ms ease;
+  transition: color 120ms ease, background 120ms ease;
 }
 .btn-ghost:hover:not(:disabled) {
   color: var(--text);
@@ -256,7 +257,7 @@
 /* Player answer buttons */
 .answer-btn {
   background: var(--surface);
-  border: 2px solid var(--border);
+  border: 1.5px solid var(--border);
   border-radius: 16px;
   padding: 18px 20px;
   font-size: 18px;
@@ -285,18 +286,18 @@
   background: var(--danger-soft);
   border-color: var(--danger);
   color: var(--danger);
-  opacity: 0.7;
+  opacity: 0.72;
 }
 
 /* Room code display (lobby) */
 .room-code {
   font-family: var(--font-mono);
   font-weight: 700;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.14em;
   color: var(--accent);
-  background: var(--surface);
-  border: 2px dashed var(--border);
-  border-radius: 20px;
+  background: var(--surface-2);
+  border: 1.5px solid var(--border);
+  border-radius: 18px;
   max-width: 100%;
 }
 
